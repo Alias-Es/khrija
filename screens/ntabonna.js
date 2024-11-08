@@ -1,52 +1,59 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Alert } from 'react-native';
 import { firebase } from '../FirebaseConfig';
 
 const Ntabonna = ({ navigation }) => {
-  const [prices, setPrices] = useState({ annuel: null, mensuel: null });
+  const [prices, setPrices] = useState({ annuel: null, mensuel: null }); // État pour stocker les prix
   const [selectedPlan, setSelectedPlan] = useState(null); // État pour suivre le plan sélectionné
 
+  // Fonction pour récupérer les prix depuis Firebase
   useEffect(() => {
     const fetchAbonnementPrices = async () => {
       try {
         const abonnementDoc = await firebase.firestore().collection('abonnement').doc('prix').get();
         if (abonnementDoc.exists) {
           setPrices({
-            annuel: abonnementDoc.data().annuel,
-            mensuel: abonnementDoc.data().mensuel,
+            annuel: abonnementDoc.data().annuel, // Récupère le prix annuel
+            mensuel: abonnementDoc.data().mensuel, // Récupère le prix mensuel
           });
+        } else {
+          console.error("Le document 'prix' n'existe pas dans la collection 'abonnement'.");
         }
       } catch (error) {
-        console.error("Erreur lors de la récupération des prix d'abonnement:", error);
+        console.error("Erreur lors de la récupération des prix d'abonnement :", error);
+        Alert.alert("Erreur", "Impossible de charger les prix d'abonnement. Veuillez réessayer.");
       }
     };
 
-    fetchAbonnementPrices();
+    fetchAbonnementPrices(); // Appel de la fonction lors du chargement du composant
   }, []);
 
   const handleSubscribe = () => {
-    // Redirige vers un lien spécifique en fonction du plan sélectionné
+    // Redirige l'utilisateur en fonction du plan sélectionné
     if (selectedPlan === 'annuel') {
-      Linking.openURL('https://example.com/abonnement-annuel');
+      Linking.openURL('https://example.com/abonnement-annuel'); // URL pour l'abonnement annuel
     } else if (selectedPlan === 'mensuel') {
-      Linking.openURL('https://example.com/abonnement-mensuel');
+      Linking.openURL('https://example.com/abonnement-mensuel'); // URL pour l'abonnement mensuel
     } else {
-      alert("Veuillez sélectionner un plan d'abonnement.");
+      Alert.alert("Erreur", "Veuillez sélectionner un plan d'abonnement.");
     }
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* Logo et sous-titre */}
       <Text style={styles.logo}>KHRIJA</Text>
       <Text style={styles.subtitle}>WELLY MEMBRE KHRIJA</Text>
       
       {/* Carte Abonnement Annuel */}
       <TouchableOpacity
-        style={[styles.card, selectedPlan === 'annuel' && styles.selectedCard]}
-        onPress={() => setSelectedPlan('annuel')}
+        style={[styles.card, selectedPlan === 'annuel' && styles.selectedCard]} // Style pour la sélection
+        onPress={() => setSelectedPlan('annuel')} // Sélectionne le plan annuel
       >
         <Text style={styles.cardTitle}>ABONNEMENT ANNUEL</Text>
-        <Text style={styles.priceText}>{prices.annuel ? `${prices.annuel} MAD` : '...'} </Text>
+        <Text style={styles.priceText}>
+          {prices.annuel !== null ? `${prices.annuel} MAD` : 'Chargement...'}
+        </Text>
         <Text style={styles.priceFrequency}>/par an</Text>
         <Text style={styles.cardDetails}>Valable 12 mois.</Text>
         <Text style={styles.cardDetails}>Pas de renouvellement automatique à la fin de l'abonnement.</Text>
@@ -54,11 +61,13 @@ const Ntabonna = ({ navigation }) => {
 
       {/* Carte Abonnement Mensuel */}
       <TouchableOpacity
-        style={[styles.card, selectedPlan === 'mensuel' && styles.selectedCard]}
-        onPress={() => setSelectedPlan('mensuel')}
+        style={[styles.card, selectedPlan === 'mensuel' && styles.selectedCard]} // Style pour la sélection
+        onPress={() => setSelectedPlan('mensuel')} // Sélectionne le plan mensuel
       >
         <Text style={styles.cardTitle}>ABONNEMENT MENSUEL</Text>
-        <Text style={[styles.priceText, { color: '#4A90E2' }]}>{prices.mensuel ? `${prices.mensuel} MAD` : '...'} </Text>
+        <Text style={[styles.priceText, { color: '#4A90E2' }]}>
+          {prices.mensuel !== null ? `${prices.mensuel} MAD` : 'Chargement...'}
+        </Text>
         <Text style={styles.priceFrequency}>/par mois</Text>
         <Text style={styles.cardDetails}>Sans engagement.</Text>
         <Text style={styles.cardDetails}>Renouvellement automatique chaque mois.</Text>
@@ -68,10 +77,10 @@ const Ntabonna = ({ navigation }) => {
       <TouchableOpacity
         style={[
           styles.subscribeButton,
-          selectedPlan ? styles.subscribeButtonActive : styles.subscribeButtonInactive
+          selectedPlan ? styles.subscribeButtonActive : styles.subscribeButtonInactive, // Style selon la sélection
         ]}
-        onPress={handleSubscribe}
-        disabled={!selectedPlan} // Désactive le bouton si aucun plan n'est sélectionné
+        onPress={handleSubscribe} // Action lors du clic
+        disabled={!selectedPlan} // Bouton désactivé si aucun plan n'est sélectionné
       >
         <Text style={styles.subscribeButtonText}>M'ABONNER</Text>
       </TouchableOpacity>

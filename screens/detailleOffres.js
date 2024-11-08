@@ -10,6 +10,7 @@ const DetailleOffres = () => {
   const { id } = route.params;
   const [offre, setOffre] = useState(null);
   const [userData, setUserData] = useState(null);
+  const [userOfferState, setUserOfferState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [initialModalVisible, setInitialModalVisible] = useState(false);
   const [offerDialogVisible, setOfferDialogVisible] = useState(false);
@@ -38,6 +39,20 @@ const DetailleOffres = () => {
             const data = userDoc.data();
             setUserData(data);
             setInitialModalVisible(!data.abonnement_actif);
+
+            // Récupérer l'état de l'offre pour cet utilisateur
+            const userOfferDoc = await firebase.firestore()
+              .collection('users')
+              .doc(user.uid)
+              .collection('offres_etats')
+              .doc(id)
+              .get();
+
+            if (userOfferDoc.exists) {
+              setUserOfferState(userOfferDoc.data());
+            } else {
+              setUserOfferState({ etat: false }); // Par défaut
+            }
           }
         }
       } catch (error) {
@@ -56,10 +71,19 @@ const DetailleOffres = () => {
 
   const handleValidateOffer = async () => {
     try {
-      await firebase.firestore().collection('offres').doc(id).update({ etat: false });
-      setOffre((prev) => ({ ...prev, etat: false }));
-      setOfferDialogVisible(false);
-      console.log("L'offre a été validée et son état est maintenant false.");
+      const user = firebase.auth().currentUser;
+      if (user) {
+        await firebase.firestore()
+          .collection('users')
+          .doc(user.uid)
+          .collection('offres_etats')
+          .doc(id)
+          .update({ etat: false });
+
+        setUserOfferState((prev) => ({ ...prev, etat: false }));
+        setOfferDialogVisible(false);
+        console.log("L'offre a été validée et son état est maintenant false pour cet utilisateur.");
+      }
     } catch (error) {
       console.error("Erreur lors de la mise à jour de l'état de l'offre:", error);
     }
@@ -85,24 +109,21 @@ const DetailleOffres = () => {
     if (!userData?.abonnement_actif) {
       return 'Ma3ndkch abonnement ?';
     }
-    return offre.etat ? 'Montrer mon offre' : 'Offre déjà utilisée';
+    return userOfferState?.etat ? 'Montrer mon offre' : 'Offre déjà utilisée';
   };
 
   const offerButtonStyle = (buttonType) => {
     if (buttonType === 1) {
-      // Si pas d'abonnement actif ou si l'offre est déjà utilisée, fond gris pour le bouton "Montrer mon offre"
-      if (!userData?.abonnement_actif || !offre?.etat) {
+      if (!userData?.abonnement_actif || !userOfferState?.etat) {
         return styles.subscriptionRequirementButtonInactive;
       }
-      return styles.subscriptionRequirementButtonActive1; // Fond rose pour le bouton actif "Montrer mon offre"
+      return styles.subscriptionRequirementButtonActive1;
     } else if (buttonType === 2) {
-      // Fond gris pour "Ma Karte" si l'abonnement est inactif uniquement
       return !userData?.abonnement_actif
         ? styles.subscriptionRequirementButtonInactive
-        : styles.subscriptionRequirementButtonActive2; // Fond bleu pour "Ma Karte" actif
+        : styles.subscriptionRequirementButtonActive2;
     }
   };
-  
 
   return (
     <View style={styles.container}>
@@ -202,35 +223,59 @@ const DetailleOffres = () => {
           <Text style={styles.title}>{offre.nom}</Text>
           <Text style={styles.description}>{offre.description}</Text>
 
-          <Text style={styles.offerTitlePonctuelle}>🎟️ Offre Ponctuelle</Text>
-          <View style={styles.offerContainerPonctuelle}>
-            <Text style={[styles.offerText, userData?.abonnement_actif && styles.offerTextActive]}>
+          <Text style={styles.offerTitlePonctuelle}>🎟️ Offre Découverte</Text>
+          <View
+            style={[ 
+              styles.offerContainerPonctuelle,
+              userData?.abonnement_actif && styles.offerContainerActivePonctuelle,
+            ]}
+          >
+            <Text
+              style={[
+                styles.offerText,
+                userData?.abonnement_actif && styles.offerTextActivePonctuelle,
+              ]}
+            >
               {offre.offreDecouverte}
             </Text>
           </View>
-          
-          {/* Bouton 1 - Montrer mon offre */}
+
+          {/* Bouton "Montrer mon offre" */}
           <TouchableOpacity
             style={[styles.subscriptionRequirementButton, offerButtonStyle(1)]}
-            onPress={() => offre.etat && userData?.abonnement_actif && setOfferDialogVisible(true)}
-            disabled={!offre.etat || !userData?.abonnement_actif}
+            onPress={() => userOfferState?.etat && userData?.abonnement_actif && setOfferDialogVisible(true)}
+            disabled={!userOfferState?.etat || !userData?.abonnement_actif}
           >
             <Text style={[
               styles.subscriptionRequirementText,
-              !userData?.abonnement_actif ? styles.subscriptionRequirementTextNoSubscription : offre.etat ? styles.subscriptionRequirementTextActive : styles.subscriptionRequirementTextInactive
+              !userData?.abonnement_actif
+                ? styles.subscriptionRequirementTextNoSubscription
+                : userOfferState?.etat
+                ? styles.subscriptionRequirementTextActive
+                : styles.subscriptionRequirementTextInactive
             ]}>
               {renderOfferButtonText()}
             </Text>
           </TouchableOpacity>
 
           <Text style={styles.offerTitlePermanente}>♾️ Offre Permanente</Text>
-          <View style={styles.offerContainerPermanente}>
-            <Text style={[styles.offerText, userData?.abonnement_actif && styles.offerTextActive]}>
+          <View
+            style={[
+              styles.offerContainerPermanente,
+              userData?.abonnement_actif && styles.offerContainerActivePermanente,
+            ]}
+          >
+            <Text
+              style={[
+                styles.offerText,
+                userData?.abonnement_actif && styles.offerTextActivePermanente,
+              ]}
+            >
               {offre.offrePermanente}
             </Text>
           </View>
 
-          {/* Bouton Ma Karte */}
+          {/* Bouton "Ma Karte" */}
           <TouchableOpacity
             style={[
               styles.subscriptionRequirementButton,
@@ -243,7 +288,7 @@ const DetailleOffres = () => {
               styles.subscriptionRequirementText,
               userData?.abonnement_actif ? styles.subscriptionRequirementTextActive : styles.subscriptionRequirementTextInactive
             ]}>
-              Ma Karte
+              Ma Carte
             </Text>
           </TouchableOpacity>
         </View>
@@ -257,7 +302,6 @@ const DetailleOffres = () => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -349,14 +393,23 @@ const styles = StyleSheet.create({
     borderColor: '#D3D3D3',
     borderWidth: 1,
   },
+  offerContainerActivePonctuelle: {
+    borderColor: '#FF79A7',
+  },
+  offerContainerActivePermanente: {
+    borderColor: '#80B1EB',
+  },
   offerText: {
     fontSize: 15,
     color: '#A9A9A9',
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  offerTextActive: {
-    color: '#000',
+  offerTextActivePonctuelle: {
+    color: '#FF79A7',
+  },
+  offerTextActivePermanente: {
+    color: '#80B1EB',
   },
   subscriptionRequirementButton: {
     paddingVertical: 10,
@@ -382,7 +435,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 4,
-   },
+  },
   subscriptionRequirementButtonInactive: {
     backgroundColor: '#B3B3B3',
   },
@@ -406,12 +459,12 @@ const styles = StyleSheet.create({
   subscribeButton: {
     backgroundColor: '#FF4081',
     paddingVertical: 15,
+    paddingHorizontal: 60,
     borderRadius: 25,
     alignItems: 'center',
     position: 'absolute',
     bottom: 20,
-    left: 20,
-    right: 20,
+    alignSelf: 'center',
   },
   subscribeButtonText: {
     color: '#FFF',

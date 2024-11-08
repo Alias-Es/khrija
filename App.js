@@ -8,6 +8,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { firebase } from './FirebaseConfig';
 import SplashScreen from './splashScreen';
 
+
+
 // Importez vos écrans
 import Dkhla from './screens/dkhla';
 import decouvrire from './screens/decouvrire';
@@ -22,6 +24,7 @@ import monAbonnement from './screens/monAbonnement';
 import Compte from './screens/compte';
 import NavBar from './NavBar';
 import mdpOublier from './screens/mdpOublier';
+import VerificationCodePage from './screens/VerificationCodePage';
 
 enableScreens(); // Active les optimisations de performance pour les transitions d'écran
 
@@ -69,8 +72,10 @@ function App() {
             }}
           >
             <Stack.Screen name="offres" component={Offres} options={{ gestureEnabled: true }} />
+            <Stack.Screen name="ntabonna" component={ntabonna} />
             <Stack.Screen name="detailleOffres" component={detailleOffres} />
             <Stack.Screen name="monAbonnement" component={monAbonnement} />
+            <Stack.Screen name="mdpOublier" component={mdpOublier} />
             <Stack.Screen
               name="compte"
               component={Compte}
@@ -124,6 +129,7 @@ function App() {
           <Stack.Screen name="dkhla" component={Dkhla} options={{ gestureEnabled: true }} />
           <Stack.Screen name="decouvrire" component={decouvrire} />
           <Stack.Screen name="ntconnecta" component={ntconnecta} />
+          <Stack.Screen name="VerificationCodePage" component={VerificationCodePage} />
           <Stack.Screen name="ntabonna" component={ntabonna} />
           <Stack.Screen name="mdpOublier" component={mdpOublier} />
           <Stack.Screen name="nt9eyd" component={nt9eyd} />

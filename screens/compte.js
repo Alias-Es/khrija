@@ -7,6 +7,7 @@ const Compte = () => {
   const navigation = useNavigation();
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [abonnementActif, setAbonnementActif] = useState(false);
+  const [prices, setPrices] = useState({ annuel: 0, mensuel: 0 }); // État pour les prix
 
   useEffect(() => {
     const fetchSubscriptionStatus = async () => {
@@ -20,7 +21,22 @@ const Compte = () => {
       }
     };
 
+    const fetchPrices = async () => {
+      try {
+        const priceDoc = await firebase.firestore().collection('abonnement').doc('prix').get();
+        if (priceDoc.exists) {
+          const data = priceDoc.data();
+          setPrices({ annuel: data.annuel, mensuel: data.mensuel });
+        } else {
+          console.error('Document prix non trouvé');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des prix :', error);
+      }
+    };
+
     fetchSubscriptionStatus();
+    fetchPrices();
   }, []);
 
   const handleLogout = async () => {
@@ -56,7 +72,7 @@ const Compte = () => {
                 onPress={() => handleSubscriptionSelect('ANNUEL')}
               >
                 <Text style={styles.subscriptionTitle}>ABONNEMENT ANNUEL</Text>
-                <Text style={styles.subscriptionPriceAnnee}>95 MAD</Text>
+                <Text style={styles.subscriptionPriceAnnee}>{prices.annuel} MAD</Text>
                 <Text style={styles.subscriptionPeriod}>/par an</Text>
                 <Text style={styles.subscriptionInfo}>Valable 12 mois.</Text>
                 <Text style={styles.subscriptionInfo}>Pas de renouvellement automatique à la fin de l'abonnement.</Text>
@@ -70,7 +86,7 @@ const Compte = () => {
                 onPress={() => handleSubscriptionSelect('MENSUEL')}
               >
                 <Text style={styles.subscriptionTitle}>ABONNEMENT MENSUEL</Text>
-                <Text style={styles.subscriptionPriceMois}>25 MAD</Text>
+                <Text style={styles.subscriptionPriceMois}>{prices.mensuel} MAD</Text>
                 <Text style={styles.subscriptionPeriod}>/par mois</Text>
                 <Text style={styles.subscriptionInfo}>Sans engagement.</Text>
                 <Text style={styles.subscriptionInfo}>Renouvellement automatique chaque mois.</Text>
@@ -103,10 +119,8 @@ const Compte = () => {
             <Text style={styles.profileText}>Mon abonnement</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.profileOption} onPress={() => navigation.navigate('FaqScreen')}>
-  <Text style={styles.profileText}>FAQ</Text>
-</TouchableOpacity>
-
-
+            <Text style={styles.profileText}>FAQ</Text>
+          </TouchableOpacity>
 
           {/* Bouton Déconnexion */}
           <TouchableOpacity style={styles.profileOption} onPress={handleLogout}>
@@ -134,6 +148,7 @@ const Compte = () => {
     </SafeAreaView>
   );
 };
+ 
 
 const styles = StyleSheet.create({
   safeContainer: {

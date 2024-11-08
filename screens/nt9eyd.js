@@ -17,6 +17,7 @@ import { firebase } from '../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import * as Google from 'expo-auth-session/providers/google';
 import { Picker } from '@react-native-picker/picker';
+import sendVerificationEmail, { generateCode } from './envoiMail'; // Import des fonctions
 
 const Nt9eyd = () => {
   const navigation = useNavigation();
@@ -28,7 +29,9 @@ const Nt9eyd = () => {
     motDePasse: '',
   });
   const [isAgePickerVisible, setIsAgePickerVisible] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
 
+  // Configuration de l'authentification Google
   const [request, response, promptAsync] = Google.useAuthRequest({
     expoClientId: 'VOTRE_EXPO_CLIENT_ID',
     iosClientId: 'VOTRE_IOS_CLIENT_ID',
@@ -82,22 +85,21 @@ const Nt9eyd = () => {
     }
 
     try {
-      const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, motDePasse);
-      const userId = userCredential.user.uid;
-
-      await firebase.firestore().collection('users').doc(userId).set({
-        prenom,
-        nom,
-        email,
-        age,
-        abonnement_actif: false,
-        periode: null,
+      // Génération du code de vérification
+      const generatedCode = generateCode();
+      setVerificationCode(generatedCode);
+  
+      // Envoi de l'email de vérification
+      await sendVerificationEmail(email, prenom, generatedCode);
+  
+      // Navigation vers l'écran de vérification avec les paramètres
+      navigation.navigate('VerificationCodePage', {
+        formData: { email, motDePasse, prenom, nom, age },
+        verificationCode: generatedCode,
       });
-
-      Alert.alert('Inscription réussie', 'Votre compte a été créé avec succès.');
-      navigation.navigate('offres');
     } catch (error) {
-      Alert.alert("Erreur lors de l'inscription", error.message);
+      console.error('Erreur lors de l\'envoi de l\'email de vérification :', error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi du code de vérification.');
     }
   };
 
@@ -204,6 +206,7 @@ const Nt9eyd = () => {
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   safeContainer: {
