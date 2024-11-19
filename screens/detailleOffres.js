@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal , Animated} from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { firebase } from '../FirebaseConfig';
 import { FontAwesome } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ const DetailleOffres = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { id } = route.params;
+
   const [offre, setOffre] = useState(null);
   const [userData, setUserData] = useState(null);
   const [userOfferState, setUserOfferState] = useState(null);
@@ -15,7 +16,44 @@ const DetailleOffres = () => {
   const [initialModalVisible, setInitialModalVisible] = useState(false);
   const [offerDialogVisible, setOfferDialogVisible] = useState(false);
   const [userCardVisible, setUserCardVisible] = useState(false);
-
+ 
+  const [shakeAnimation] = useState(new Animated.Value(0)); // Ligne à ajouter
+  const shakeButton = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnimation, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: -1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+  const handleOutsideClick = (event) => {
+    // Vérifier si le clic est fait en dehors des zones interactives
+ 
+      shakeButton();
+    
+  };
+  const animatedStyle = {
+    transform: [
+      {
+        translateX: shakeAnimation.interpolate({
+          inputRange: [-1, 1],
+          outputRange: [-5, 5],
+        }),
+      },
+    ],
+  };
+  
   useEffect(() => {
     const fetchOffre = async () => {
       try {
@@ -126,7 +164,8 @@ const DetailleOffres = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onTouchStart={handleOutsideClick}>
+
       {/* Modal d'abonnement */}
       <Modal
         visible={initialModalVisible}
@@ -295,10 +334,13 @@ const DetailleOffres = () => {
       </ScrollView>
 
       {!userData?.abonnement_actif && (
-        <TouchableOpacity style={styles.subscribeButton} onPress={handleSubscribe}>
-          <Text style={styles.subscribeButtonText}>M'ABONNER</Text>
-        </TouchableOpacity>
-      )}
+  <Animated.View style={[styles.buttonContainer, animatedStyle]}>
+    <TouchableOpacity style={styles.subscribeButton} onPress={handleSubscribe}>
+      <Text style={styles.subscribeButtonText}>M'ABONNER</Text>
+    </TouchableOpacity>
+  </Animated.View>
+)}
+
     </View>
   );
 };

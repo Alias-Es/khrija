@@ -45,15 +45,19 @@ const styles = StyleSheet.create({
   navBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 25,
+    paddingVertical: 20,
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
     backgroundColor: '#FFF',
     borderRadius: 10,
-    paddingTop: 20,
+    paddingTop: 10,
     paddingVertical: 40,
   },
   navItem: {
-    alignItems: 'center',
-    },
+    flex: 1, // Chaque bouton occupe un espace égal dans la barre
+    alignItems: 'center', // Centre le contenu horizontalement
+    justifyContent: 'center', // Centre le contenu verticalement
+    paddingVertical: 10, // Limite la taille cliquable
+  
+  },
 });
