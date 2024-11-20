@@ -1,5 +1,3 @@
-// screens/DetailleOffres.js
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -7,11 +5,9 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Animated,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { firebase } from '../FirebaseConfig';
-import * as Haptics from 'expo-haptics';
 
 // Importation des composants personnalisés
 import InitialSubscriptionModal from '../components/InitialSubscriptionModal';
@@ -21,6 +17,7 @@ import SubscriptionButton from '../components/SubscriptionButton';
 import Header from '../components/Header';
 import OfferSection from '../components/OfferSection';
 import OfferButton from '../components/OfferButton';
+import CustomSwipeButton from '../components/CustomSwipeButton'; // Import du bouton swipe
 
 const DetailleOffres = () => {
   const route = useRoute();
@@ -34,18 +31,22 @@ const DetailleOffres = () => {
   const [initialModalVisible, setInitialModalVisible] = useState(false);
   const [offerDialogVisible, setOfferDialogVisible] = useState(false);
   const [userCardVisible, setUserCardVisible] = useState(false);
-  const [shakeAnimation] = useState(new Animated.Value(0));
+  const [showSwipeButton, setShowSwipeButton] = useState(false); // Affiche le swipe après validation
 
   useEffect(() => {
     const fetchOffre = async () => {
       try {
+        console.log("Fetching offer data for ID:", id);
         const doc = await firebase
           .firestore()
           .collection('offres')
           .doc(id)
           .get();
         if (doc.exists) {
+          console.log("Offer data retrieved:", doc.data());
           setOffre(doc.data());
+        } else {
+          console.log("No offer found for ID:", id);
         }
         setLoading(false);
       } catch (error) {
@@ -58,6 +59,7 @@ const DetailleOffres = () => {
       try {
         const user = firebase.auth().currentUser;
         if (user) {
+          console.log("Fetching user data for user ID:", user.uid);
           const userDoc = await firebase
             .firestore()
             .collection('users')
@@ -65,6 +67,7 @@ const DetailleOffres = () => {
             .get();
           if (userDoc.exists) {
             const data = userDoc.data();
+            console.log("User data retrieved:", data);
             setUserData(data);
             setInitialModalVisible(!data.abonnement_actif);
 
@@ -78,11 +81,18 @@ const DetailleOffres = () => {
               .get();
 
             if (userOfferDoc.exists) {
+              console.log("User offer state retrieved:", userOfferDoc.data());
               setUserOfferState(userOfferDoc.data());
+              setShowSwipeButton(false);
             } else {
-              setUserOfferState({ etat: false }); // Par défaut
+              console.log("No user offer state found, setting default.");
+              setUserOfferState({ etat: true });
             }
+          } else {
+            console.log("No user data found for user ID:", user.uid);
           }
+        } else {
+          console.log("No user authenticated.");
         }
       } catch (error) {
         console.error(
@@ -97,14 +107,22 @@ const DetailleOffres = () => {
   }, [id]);
 
   const handleSubscribe = () => {
+    console.log("Handling subscription navigation.");
     setInitialModalVisible(false);
     navigation.navigate('ntabonna');
   };
 
-  const handleValidateOffer = async () => {
+  const handleValidateOffer = () => {
+    console.log("Offer validated.");
+    setOfferDialogVisible(false);
+    setShowSwipeButton(true);
+  };
+
+  const handleSwipeSuccess = async () => {
     try {
       const user = firebase.auth().currentUser;
       if (user) {
+        console.log("User swiped successfully, updating state.");
         await firebase
           .firestore()
           .collection('users')
@@ -114,63 +132,16 @@ const DetailleOffres = () => {
           .update({ etat: false });
 
         setUserOfferState((prev) => ({ ...prev, etat: false }));
-        setOfferDialogVisible(false);
-        console.log(
-          "L'offre a été validée et son état est maintenant false pour cet utilisateur."
-        );
+        setShowSwipeButton(false);
+        console.log("L'offre a été validée avec succès.");
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour de l'état de l'offre:", error);
     }
   };
 
-  const shakeButton = () => {
-    // Déclencher le retour haptique avec expo-haptics
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-
-    // Animation de secousse
-    Animated.sequence([
-      Animated.timing(shakeAnimation, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: -1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: 0,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const handleOutsideClick = (event) => {
-    shakeButton();
-  };
-
-  const animatedStyle = {
-    transform: [
-      {
-        translateX: shakeAnimation.interpolate({
-          inputRange: [-1, 1],
-          outputRange: [-5, 5],
-        }),
-      },
-    ],
-  };
-
-  const renderOfferButtonText = () => {
-    if (!userData?.abonnement_actif) {
-      return 'Ma3ndkch abonnement ?';
-    }
-    return userOfferState?.etat ? 'Montrer mon offre' : 'Offre déjà utilisée';
-  };
-
   if (loading) {
+    console.log("Loading screen displayed.");
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#E91E63" />
@@ -179,6 +150,7 @@ const DetailleOffres = () => {
   }
 
   if (!offre) {
+    console.log("No offer available, displaying error screen.");
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>
@@ -188,8 +160,10 @@ const DetailleOffres = () => {
     );
   }
 
+  console.log("Rendering offer details:", offre);
+
   return (
-    <View style={styles.container} onTouchStart={handleOutsideClick}>
+    <View style={styles.container}>
       <InitialSubscriptionModal
         visible={initialModalVisible}
         onClose={() => setInitialModalVisible(false)}
@@ -219,7 +193,17 @@ const DetailleOffres = () => {
         <View style={styles.content}>
           <Text style={styles.categoryText}>{offre.categorie}</Text>
           <Text style={styles.title}>{offre.nom}</Text>
-          <Text style={styles.description}>{offre.description}</Text>
+
+          {/* Gestion améliorée de la description */}
+          <View style={styles.descriptionContainer}>
+            <Text
+              style={styles.description}
+              numberOfLines={3} // Tronque au bout de 3 lignes
+              ellipsizeMode="tail"
+            >
+              {offre.description}
+            </Text>
+          </View>
 
           <OfferSection
             title="🎟️ Offre Découverte"
@@ -228,16 +212,24 @@ const DetailleOffres = () => {
             styleType="Ponctuelle"
           />
 
-          <OfferButton
-            onPress={() =>
-              userOfferState?.etat &&
-              userData?.abonnement_actif &&
-              setOfferDialogVisible(true)
-            }
-            text={renderOfferButtonText()}
-            buttonType={1}
-            isDisabled={!userOfferState?.etat || !userData?.abonnement_actif}
-          />
+          <View style={styles.buttonContainer}>
+            {!userOfferState?.etat ? (
+              <OfferButton
+                text="Offre déjà utilisée"
+                buttonType={1}
+                isDisabled={true}
+              />
+            ) : !showSwipeButton ? (
+              <OfferButton
+                onPress={() => setOfferDialogVisible(true)}
+                text="Afficher mon offre"
+                buttonType={1}
+                isDisabled={!userOfferState?.etat || !userData?.abonnement_actif}
+              />
+            ) : (
+              <CustomSwipeButton onSwipeComplete={handleSwipeSuccess} />
+            )}
+          </View>
 
           <OfferSection
             title="♾️ Offre Permanente"
@@ -258,10 +250,7 @@ const DetailleOffres = () => {
       </ScrollView>
 
       {!userData?.abonnement_actif && (
-        <SubscriptionButton
-          onPress={handleSubscribe}
-          animatedStyle={animatedStyle}
-        />
+        <SubscriptionButton onPress={handleSubscribe} />
       )}
     </View>
   );
@@ -296,6 +285,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     marginTop: -20,
   },
+  descriptionContainer: {
+    maxHeight: 120,
+    overflow: 'hidden', // Empêche les débordements
+    marginBottom: 20,
+  },
   categoryText: {
     color: '#A9A9A9',
     fontSize: 13,
@@ -311,7 +305,11 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 15,
     color: '#555',
-    marginBottom: 20,
+    lineHeight: 20,
+  },
+  buttonContainer: {
+    marginVertical: 20,
+    alignItems: 'center',
   },
 });
 
