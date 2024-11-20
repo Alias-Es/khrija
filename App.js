@@ -76,6 +76,8 @@ function App() {
             <Stack.Screen name="detailleOffres" component={detailleOffres} />
             <Stack.Screen name="monAbonnement" component={monAbonnement} />
             <Stack.Screen name="mdpOublier" component={mdpOublier} />
+            <Stack.Screen name="dkhla" component={Dkhla} options={{ gestureEnabled: true }} />
+         
             <Stack.Screen
               name="compte"
               component={Compte}
