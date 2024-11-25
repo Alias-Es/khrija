@@ -10,14 +10,11 @@ import {
   Alert,
   Image,
   Platform,
-  Modal,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import { firebase } from '../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import * as Google from 'expo-auth-session/providers/google';
-import { Picker } from '@react-native-picker/picker';
-import sendVerificationEmail, { generateCode } from './envoiMail'; // Import des fonctions
+import AgePickerModal from '../components/AgePickerModal'; // Import du composant AgePickerModal
 
 const Nt9eyd = () => {
   const navigation = useNavigation();
@@ -29,7 +26,6 @@ const Nt9eyd = () => {
     motDePasse: '',
   });
   const [isAgePickerVisible, setIsAgePickerVisible] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
 
   // Configuration de l'authentification Google
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -76,7 +72,7 @@ const Nt9eyd = () => {
     setForm({ ...form, [name]: value });
   };
 
-  const handleSignUpWithEmail = async () => {
+  const handleSignUpWithEmail = () => {
     const { email, motDePasse, prenom, nom, age } = form;
 
     if (!prenom || !nom || !email || !motDePasse || !age) {
@@ -84,23 +80,10 @@ const Nt9eyd = () => {
       return;
     }
 
-    try {
-      // Génération du code de vérification
-      const generatedCode = generateCode();
-      setVerificationCode(generatedCode);
-  
-      // Envoi de l'email de vérification
-      await sendVerificationEmail(email, prenom, generatedCode);
-  
-      // Navigation vers l'écran de vérification avec les paramètres
-      navigation.navigate('VerificationCodePage', {
-        formData: { email, motDePasse, prenom, nom, age },
-        verificationCode: generatedCode,
-      });
-    } catch (error) {
-      console.error('Erreur lors de l\'envoi de l\'email de vérification :', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi du code de vérification.');
-    }
+    // Navigation vers l'écran de vérification avec les paramètres
+    navigation.navigate('VerificationCodePage', {
+      formData: { email, motDePasse, prenom, nom, age },
+    });
   };
 
   return (
@@ -121,38 +104,39 @@ const Nt9eyd = () => {
             { name: 'prenom', label: 'Prénom', type: 'text' },
             { name: 'nom', label: 'Nom', type: 'text' },
             { name: 'email', label: 'Email', type: 'email' },
-            { name: 'age', label: 'Âge', type: 'picker' },
             { name: 'motDePasse', label: 'Mot de passe', type: 'password' },
           ].map((field, index) => (
             <View style={styles.inputContainer} key={index}>
               <Text style={styles.label}>{field.label} *</Text>
-              {field.type !== 'picker' ? (
-                <TextInput
-                  style={styles.input}
-                  placeholder={field.label}
-                  value={form[field.name]}
-                  onChangeText={(value) => handleInputChange(field.name, value)}
-                  secureTextEntry={field.type === 'password'}
-                  keyboardType={field.type === 'email' ? 'email-address' : 'default'}
-                  autoCapitalize={field.type === 'email' ? 'none' : 'sentences'}
-                />
-              ) : (
-                <TouchableOpacity
-                  onPress={() => setIsAgePickerVisible(true)}
-                  style={styles.input}
-                >
-                  <Text
-                    style={{
-                      color: form[field.name] ? '#000' : '#888',
-                      fontSize: 16,
-                    }}
-                  >
-                    {form[field.name] ? form[field.name] : 'Sélectionnez votre âge'}
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <TextInput
+                style={styles.input}
+                placeholder={field.label}
+                value={form[field.name]}
+                onChangeText={(value) => handleInputChange(field.name, value)}
+                secureTextEntry={field.type === 'password'}
+                keyboardType={field.type === 'email' ? 'email-address' : 'default'}
+                autoCapitalize={field.type === 'email' ? 'none' : 'sentences'}
+              />
             </View>
           ))}
+
+          {/* Champ Age avec AgePickerModal */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Âge *</Text>
+            <TouchableOpacity
+              onPress={() => setIsAgePickerVisible(true)}
+              style={styles.input}
+            >
+              <Text
+                style={{
+                  color: form.age ? '#000' : '#888',
+                  fontSize: 16,
+                }}
+              >
+                {form.age ? form.age : 'Sélectionnez votre âge'}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity style={styles.button} onPress={handleSignUpWithEmail}>
             <Text style={styles.buttonText}>M'abonner</Text>
@@ -171,42 +155,15 @@ const Nt9eyd = () => {
       </ScrollView>
 
       {/* Modal pour le Picker de l'âge */}
-      <Modal
-        transparent={true}
+      <AgePickerModal
         visible={isAgePickerVisible}
-        animationType="slide"
-        onRequestClose={() => setIsAgePickerVisible(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setIsAgePickerVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Sélectionnez votre âge</Text>
-                <Picker
-                  selectedValue={form['age']}
-                  onValueChange={(value) => handleInputChange('age', value)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Sélectionnez votre âge" value="" />
-                  {[...Array(9)].map((_, i) => (
-                    <Picker.Item key={i} label={`${18 + i}`} value={`${18 + i}`} />
-                  ))}
-                </Picker>
-                <TouchableOpacity
-                  style={styles.modalButton}
-                  onPress={() => setIsAgePickerVisible(false)}
-                >
-                  <Text style={styles.modalButtonText}>Valider</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        onClose={() => setIsAgePickerVisible(false)}
+        selectedValue={form.age}
+        onValueChange={(value) => handleInputChange('age', value)}
+      />
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   safeContainer: {
@@ -310,42 +267,6 @@ const styles = StyleSheet.create({
   googleIcon: {
     width: 250,
     height: 50,
-  },
-  // Styles pour le Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#FFF',
-    borderRadius: 10,
-    padding: 20,
-    width: '80%',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 18,
-    marginBottom: 10,
-    color: '#E91E63',
-    fontWeight: 'bold',
-  },
-  picker: {
-    width: '100%',
-    height: Platform.OS === 'ios' ? 200 : 50,
-  },
-  modalButton: {
-    marginTop: 20,
-    backgroundColor: '#E91E63',
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    borderRadius: 30,
-  },
-  modalButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });
 

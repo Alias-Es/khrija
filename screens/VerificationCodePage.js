@@ -1,25 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
-  StyleSheet,
   Alert,
+  StyleSheet,
+  TouchableOpacity,
   SafeAreaView,
   ScrollView,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../FirebaseConfig';
-import sendVerificationEmail, { generateCode } from './envoiMail'; // Import des fonctions nécessaires
 
 const VerificationCodePage = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { formData, verificationCode: initialVerificationCode } = route.params;
+  const { formData } = route.params; // Données envoyées depuis la page précédente
+  const [enteredCode, setEnteredCode] = useState(''); // Code entré par l'utilisateur
+  const [verificationCode, setVerificationCode] = useState(''); // Code généré par le serveur
 
-  const [enteredCode, setEnteredCode] = useState('');
-  const [verificationCode, setVerificationCode] = useState(initialVerificationCode);
+  useEffect(() => {
+    const initializeVerification = async () => {
+      try {
+        // Remplacez par l'URL de votre fonction déployée
+        const response = await fetch('https://sendverificationemail-zt7utylc6a-uc.a.run.app', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            prenom: formData.prenom,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Résultat de la fonction cloud:', result);
+          setVerificationCode(result.code); // Stocker le code localement
+          Alert.alert('Code envoyé', 'Un code de vérification a été envoyé à votre adresse email.');
+        } else {
+          const errorText = await response.text();
+          console.error('Erreur lors de l\'appel de la fonction cloud:', errorText);
+          Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi du code de vérification.');
+        }
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi du code de vérification :', error);
+        Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi du code de vérification.');
+      }
+    };
+
+    initializeVerification();
+  }, [formData.email, formData.prenom]);
 
   const initializeUserOffers = async (userId) => {
     try {
@@ -48,6 +80,7 @@ const VerificationCodePage = () => {
     if (enteredCode === verificationCode) {
       const { email, motDePasse, prenom, nom, age } = formData;
       try {
+        // Création de l'utilisateur dans Firebase Authentication
         const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, motDePasse);
         const userId = userCredential.user.uid;
 
@@ -65,8 +98,9 @@ const VerificationCodePage = () => {
         await initializeUserOffers(userId);
 
         Alert.alert('Inscription réussie', 'Votre compte a été créé avec succès.');
-        navigation.navigate('offres');
+        navigation.navigate('offres'); // Naviguer vers la page des offres
       } catch (error) {
+        console.error("Erreur lors de l'inscription :", error);
         Alert.alert("Erreur lors de l'inscription", error.message);
       }
     } else {
@@ -76,13 +110,28 @@ const VerificationCodePage = () => {
 
   const resendCode = async () => {
     try {
-      const newCode = generateCode(); // Génère un nouveau code
-      setVerificationCode(newCode); // Met à jour l'état local avec le nouveau code
+      // Appel de la fonction cloud pour renvoyer le code
+      const response = await fetch('https://sendverificationemail-zt7utylc6a-uc.a.run.app', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          prenom: formData.prenom,
+        }),
+      });
 
-      // Envoi l'email avec le nouveau code
-      await sendVerificationEmail(formData.email, formData.prenom, newCode);
-      
-      Alert.alert('Code envoyé', 'Un nouveau code de vérification a été envoyé à votre email.');
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Nouveau code de vérification:', result.code);
+        setVerificationCode(result.code); // Met à jour le code de vérification localement
+        Alert.alert('Code envoyé', 'Un nouveau code de vérification a été envoyé à votre adresse email.');
+      } else {
+        const errorText = await response.text();
+        console.error('Erreur lors de l\'appel de la fonction cloud:', errorText);
+        Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi du code de vérification.');
+      }
     } catch (error) {
       console.error('Erreur lors de l\'envoi du code de vérification :', error);
       Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi du code de vérification.');

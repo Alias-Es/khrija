@@ -25,7 +25,7 @@ export default function Dkhla() {
 
   return (
     <ImageBackground
-      source={require('../assets/images/fond-rabat.jpg')} // Assurez-vous que le chemin de l'image est correct
+      source={require('../assets/images/op.jpeg')} // Assurez-vous que le chemin de l'image est correct
       style={styles.background}
       imageStyle={styles.image}
       onLayout={onLayoutRootView}

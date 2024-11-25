@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, Animated, StyleSheet } from 'react-native';
+import { View, Text, Animated, StyleSheet, Dimensions } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 
-const CustomSwipeButton = ({ onSwipeComplete, swipeValidated }) => {
-  const SWIPE_WIDTH = 320; // Largeur totale du rail
-  const THUMB_SIZE = 60; // Taille du pouce
-  const SWIPE_THRESHOLD = SWIPE_WIDTH - THUMB_SIZE - 20; // Seuil pour valider le swipe
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-  const [swiped, setSwiped] = useState(false); // État local pour gérer le swipe
-  const translateX = new Animated.Value(0); // Position animée du pouce
+const CustomSwipeButton = ({ onSwipeComplete, swipeValidated }) => {
+  const SWIPE_WIDTH = SCREEN_WIDTH * 0.9; // 90% de la largeur de l'écran
+  const THUMB_SIZE = 100; // Taille du pouce augmentée
+  const SWIPE_THRESHOLD = SWIPE_WIDTH - THUMB_SIZE - 40; // Seuil ajusté
+
+  const [swiped, setSwiped] = useState(false);
+  const translateX = new Animated.Value(0);
 
   const onGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
@@ -19,18 +21,16 @@ const CustomSwipeButton = ({ onSwipeComplete, swipeValidated }) => {
   const onHandlerStateChange = (event) => {
     if (event.nativeEvent.state === State.END) {
       if (event.nativeEvent.translationX > SWIPE_THRESHOLD) {
-        // Valider le swipe
         Animated.timing(translateX, {
           toValue: SWIPE_WIDTH - THUMB_SIZE,
           duration: 200,
           useNativeDriver: false,
         }).start(() => {
           setSwiped(true);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); // Retour haptique
-          onSwipeComplete(); // Informer le composant parent
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          onSwipeComplete();
         });
       } else {
-        // Ramener le pouce à la position initiale si le seuil n'est pas atteint
         Animated.spring(translateX, {
           toValue: 0,
           friction: 5,
@@ -50,7 +50,7 @@ const CustomSwipeButton = ({ onSwipeComplete, swipeValidated }) => {
             {
               backgroundColor: translateX.interpolate({
                 inputRange: [0, SWIPE_WIDTH - THUMB_SIZE],
-                outputRange: ['#D3D3D3', '#4CAF50'], // Dégradé dynamique
+                outputRange: ['#E0E0E0', '#E91E63'],
                 extrapolate: 'clamp',
               }),
             },
@@ -58,13 +58,13 @@ const CustomSwipeButton = ({ onSwipeComplete, swipeValidated }) => {
         />
         {/* Texte */}
         <Text style={styles.title}>
-          {swiped || swipeValidated ? 'Offre déjà utilisée' : 'Glissez pour valider'}
+          {swiped || swipeValidated ? 'Offre validée' : 'Glissez pour valider'}
         </Text>
-        {/* Pouce avec gestionnaire de gestes */}
+        {/* Pouce */}
         <PanGestureHandler
           onGestureEvent={onGestureEvent}
           onHandlerStateChange={onHandlerStateChange}
-          enabled={!swiped && !swipeValidated} // Désactiver le swipe après validation
+          enabled={!swiped && !swipeValidated}
         >
           <Animated.View
             style={[
@@ -97,31 +97,31 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   swipeContainer: {
-    height: 70,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 35,
+    height: 80, // Hauteur augmentée
+    backgroundColor: '#F0F0F0',
+    borderRadius: 40, // Rayon de bordure augmenté
     overflow: 'hidden',
     justifyContent: 'center',
     position: 'relative',
   },
   rail: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 35,
-    opacity: 0.8,
+    borderRadius: 40,
+    opacity: 0.9,
   },
   title: {
     position: 'absolute',
     width: '100%',
     textAlign: 'center',
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: '#555',
+    fontSize: 20, // Police légèrement plus grande
+    fontWeight: '600',
   },
   thumb: {
-    width: 60,
-    height: 60,
+    width: 80, // Taille du pouce augmentée
+    height: 80,
     backgroundColor: '#FFFFFF',
-    borderRadius: 60 / 2,
+    borderRadius: 40, // Rayon de bordure ajusté
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -130,11 +130,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
+    borderColor: '#E91E63',
+    borderWidth: 2,
   },
   thumbText: {
-    fontSize: 24,
+    fontSize: 24, // Texte plus grand
     fontWeight: 'bold',
-    color: '#757575',
+    color: '#E91E63',
   },
 });
 
