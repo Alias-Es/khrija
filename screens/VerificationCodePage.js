@@ -17,7 +17,6 @@ const VerificationCodePage = () => {
   const route = useRoute();
   const { formData } = route.params; // Données envoyées depuis la page précédente
   const [enteredCode, setEnteredCode] = useState(''); // Code entré par l'utilisateur
-  const [verificationCode, setVerificationCode] = useState(''); // Code généré par le serveur
 
   useEffect(() => {
     const initializeVerification = async () => {
@@ -35,18 +34,16 @@ const VerificationCodePage = () => {
         });
 
         if (response.ok) {
-          const result = await response.json();
-          console.log('Résultat de la fonction cloud:', result);
-          setVerificationCode(result.code); // Stocker le code localement
+          // Nous n'avons plus besoin de récupérer le code de vérification
           Alert.alert('Code envoyé', 'Un code de vérification a été envoyé à votre adresse email.');
         } else {
           const errorText = await response.text();
-          console.error('Erreur lors de l\'appel de la fonction cloud:', errorText);
-          Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi du code de vérification.');
+          console.error("Erreur lors de l'appel de la fonction cloud:", errorText);
+          Alert.alert('Erreur', "Une erreur est survenue lors de l'envoi du code de vérification.");
         }
       } catch (error) {
-        console.error('Erreur lors de l\'envoi du code de vérification :', error);
-        Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi du code de vérification.');
+        console.error("Erreur lors de l'envoi du code de vérification :", error);
+        Alert.alert('Erreur', "Une erreur est survenue lors de l'envoi du code de vérification.");
       }
     };
 
@@ -69,42 +66,60 @@ const VerificationCodePage = () => {
       await batch.commit();
       console.log('États des offres initialisés pour l’utilisateur :', userId);
     } catch (error) {
-      console.error('Erreur lors de l’initialisation des états des offres :', error);
+      console.error("Erreur lors de l’initialisation des états des offres :", error);
     }
   };
 
   const verifyCodeAndSignUp = async () => {
     console.log('Code saisi :', enteredCode);
-    console.log('Code attendu :', verificationCode);
 
-    if (enteredCode === verificationCode) {
-      const { email, motDePasse, prenom, nom, age } = formData;
-      try {
-        // Création de l'utilisateur dans Firebase Authentication
-        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, motDePasse);
-        const userId = userCredential.user.uid;
+    try {
+      // Envoyer le code saisi au serveur pour vérification
+      const response = await fetch('https://verifyemailcode-zt7utylc6a-uc.a.run.app', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          code: enteredCode,
+        }),
+      });
 
-        // Ajouter les informations utilisateur dans Firestore
-        await firebase.firestore().collection('users').doc(userId).set({
-          prenom,
-          nom,
-          email,
-          age,
-          abonnement_actif: false,
-          periode: null,
-        });
+      if (response.ok) {
+        // Le code est vérifié, procéder à l'inscription
+        const { email, motDePasse, prenom, nom, age } = formData;
+        try {
+          // Création de l'utilisateur dans Firebase Authentication
+          const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, motDePasse);
+          const userId = userCredential.user.uid;
 
-        // Initialiser les états des offres pour cet utilisateur
-        await initializeUserOffers(userId);
+          // Ajouter les informations utilisateur dans Firestore
+          await firebase.firestore().collection('users').doc(userId).set({
+            prenom,
+            nom,
+            email,
+            age,
+            abonnement_actif: false,
+            periode: null,
+          });
 
-        Alert.alert('Inscription réussie', 'Votre compte a été créé avec succès.');
-        navigation.navigate('offres'); // Naviguer vers la page des offres
-      } catch (error) {
-        console.error("Erreur lors de l'inscription :", error);
-        Alert.alert("Erreur lors de l'inscription", error.message);
+          // Initialiser les états des offres pour cet utilisateur
+          await initializeUserOffers(userId);
+
+          Alert.alert('Inscription réussie', 'Votre compte a été créé avec succès.');
+          navigation.navigate('offres'); // Naviguer vers la page des offres
+        } catch (error) {
+          console.error("Erreur lors de l'inscription :", error);
+          Alert.alert("Erreur lors de l'inscription", error.message);
+        }
+      } else {
+        const errorText = await response.text();
+        Alert.alert('Erreur', errorText);
       }
-    } else {
-      Alert.alert('Erreur', 'Le code de vérification est incorrect.');
+    } catch (error) {
+      console.error('Erreur lors de la vérification du code :', error);
+      Alert.alert('Erreur', "Une erreur est survenue lors de la vérification du code.");
     }
   };
 
@@ -123,18 +138,16 @@ const VerificationCodePage = () => {
       });
 
       if (response.ok) {
-        const result = await response.json();
-        console.log('Nouveau code de vérification:', result.code);
-        setVerificationCode(result.code); // Met à jour le code de vérification localement
+        // Nous n'avons plus besoin de récupérer le code de vérification
         Alert.alert('Code envoyé', 'Un nouveau code de vérification a été envoyé à votre adresse email.');
       } else {
         const errorText = await response.text();
-        console.error('Erreur lors de l\'appel de la fonction cloud:', errorText);
-        Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi du code de vérification.');
+        console.error("Erreur lors de l'appel de la fonction cloud:", errorText);
+        Alert.alert('Erreur', "Une erreur est survenue lors de l'envoi du code de vérification.");
       }
     } catch (error) {
-      console.error('Erreur lors de l\'envoi du code de vérification :', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi du code de vérification.');
+      console.error("Erreur lors de l'envoi du code de vérification :", error);
+      Alert.alert('Erreur', "Une erreur est survenue lors de l'envoi du code de vérification.");
     }
   };
 
