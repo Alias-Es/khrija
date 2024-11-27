@@ -1,63 +1,94 @@
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 export default function NavBar({ activeTab, setActiveTab }) {
   const navigation = useNavigation();
+  const [scale] = useState({
+    compte: new Animated.Value(1),
+    offres: new Animated.Value(1),
+    karta: new Animated.Value(1),
+  });
+
+  const handlePress = (tab) => {
+    // Reset all scales
+    Object.keys(scale).forEach((key) => scale[key].setValue(1));
+    // Scale up the pressed tab
+    Animated.spring(scale[tab], {
+      toValue: 1.3, // Taille augmentée
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
+    setActiveTab(tab);
+    navigation.navigate(tab);
+  };
 
   return (
     <View style={styles.navBar}>
       <TouchableOpacity
         style={styles.navItem}
-        onPress={() => {
-          setActiveTab('compte');
-          navigation.navigate('compte');
-        }}
+        onPress={() => handlePress('compte')}
       >
-        <FontAwesome5 name="user" size={24} color={activeTab === 'compte' ? '#FF4081' : '#75B3EB'} />
+        <Animated.View style={{ transform: [{ scale: scale.compte }] }}>
+          <FontAwesome5
+            name="user"
+            size={30} // Taille légèrement agrandie
+            color={activeTab === 'compte' ? '#FF4081' : '#75B3EB'}
+          />
+        </Animated.View>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.navItem}
-        onPress={() => {
-          setActiveTab('offres');
-          navigation.navigate('offres');
-        }}
+        onPress={() => handlePress('offres')}
       >
-        <FontAwesome5 name="gift" size={24} color={activeTab === 'offres' ? '#FF4081' : '#75B3EB'} />
+        <Animated.View style={{ transform: [{ scale: scale.offres }] }}>
+          <FontAwesome5
+            name="gift"
+            size={30} // Taille légèrement agrandie
+            color={activeTab === 'offres' ? '#FF4081' : '#75B3EB'}
+          />
+        </Animated.View>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.navItem}
-        onPress={() => {
-          setActiveTab('karta');
-          navigation.navigate('karta');
-        }}
+        onPress={() => handlePress('karta')}
       >
-        <FontAwesome5 name="credit-card" size={24} color={activeTab === 'karta' ? '#FF4081' : '#75B3EB'} />
+        <Animated.View style={{ transform: [{ scale: scale.karta }] }}>
+          <FontAwesome5
+            name="credit-card"
+            size={30} // Taille légèrement agrandie
+            color={activeTab === 'karta' ? '#FF4081' : '#75B3EB'}
+          />
+        </Animated.View>
       </TouchableOpacity>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   navBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 20,
+    paddingVertical: 30,
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
     backgroundColor: '#FFF',
-    borderRadius: 10,
-    paddingTop: 10,
-    paddingVertical: 40,
+    borderRadius: 30,
+    paddingTop: 17,
+    // Ombre pour la barre de navigation
+    shadowColor: '#000', // Couleur de l'ombre
+    shadowOffset: { width: 0, height: 5 }, // Décalage de l'ombre
+    shadowOpacity: 0.7, // Opacité de l'ombre
+    shadowRadius: 10, // Rayon de l'ombre (flou)
+    elevation: 5, // Pour Android (équivalent)
   },
   navItem: {
-    flex: 1, // Chaque bouton occupe un espace égal dans la barre
-    alignItems: 'center', // Centre le contenu horizontalement
-    justifyContent: 'center', // Centre le contenu verticalement
-    paddingVertical: 10, // Limite la taille cliquable
-  
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
+
+

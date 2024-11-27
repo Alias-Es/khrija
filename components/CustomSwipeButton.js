@@ -6,9 +6,9 @@ import * as Haptics from 'expo-haptics';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const CustomSwipeButton = ({ onSwipeComplete, swipeValidated }) => {
-  const SWIPE_WIDTH = SCREEN_WIDTH * 0.9; // 90% de la largeur de l'écran
-  const THUMB_SIZE = 100; // Taille du pouce augmentée
-  const SWIPE_THRESHOLD = SWIPE_WIDTH - THUMB_SIZE - 40; // Seuil ajusté
+  const SWIPE_WIDTH = SCREEN_WIDTH * 0.9;
+  const THUMB_SIZE = 80;
+  const SWIPE_THRESHOLD = SWIPE_WIDTH - THUMB_SIZE - 10;
 
   const [swiped, setSwiped] = useState(false);
   const translateX = new Animated.Value(0);
@@ -22,7 +22,7 @@ const CustomSwipeButton = ({ onSwipeComplete, swipeValidated }) => {
     if (event.nativeEvent.state === State.END) {
       if (event.nativeEvent.translationX > SWIPE_THRESHOLD) {
         Animated.timing(translateX, {
-          toValue: SWIPE_WIDTH - THUMB_SIZE,
+          toValue: SWIPE_THRESHOLD,
           duration: 200,
           useNativeDriver: false,
         }).start(() => {
@@ -43,24 +43,21 @@ const CustomSwipeButton = ({ onSwipeComplete, swipeValidated }) => {
   return (
     <View style={styles.container}>
       <View style={[styles.swipeContainer, { width: SWIPE_WIDTH }]}>
-        {/* Rail avec dégradé */}
         <Animated.View
           style={[
             styles.rail,
             {
               backgroundColor: translateX.interpolate({
-                inputRange: [0, SWIPE_WIDTH - THUMB_SIZE],
+                inputRange: [0, SWIPE_THRESHOLD],
                 outputRange: ['#E0E0E0', '#E91E63'],
                 extrapolate: 'clamp',
               }),
             },
           ]}
         />
-        {/* Texte */}
         <Text style={styles.title}>
           {swiped || swipeValidated ? 'Offre validée' : 'Glissez pour valider'}
         </Text>
-        {/* Pouce */}
         <PanGestureHandler
           onGestureEvent={onGestureEvent}
           onHandlerStateChange={onHandlerStateChange}
@@ -73,8 +70,8 @@ const CustomSwipeButton = ({ onSwipeComplete, swipeValidated }) => {
                 transform: [
                   {
                     translateX: translateX.interpolate({
-                      inputRange: [0, SWIPE_WIDTH - THUMB_SIZE],
-                      outputRange: [0, SWIPE_WIDTH - THUMB_SIZE],
+                      inputRange: [0, SWIPE_THRESHOLD],
+                      outputRange: [0, SWIPE_THRESHOLD],
                       extrapolate: 'clamp',
                     }),
                   },
@@ -94,12 +91,14 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
     marginVertical: 20,
+    overflow: 'hidden',
   },
   swipeContainer: {
-    height: 80, // Hauteur augmentée
+    height: 80,
     backgroundColor: '#F0F0F0',
-    borderRadius: 40, // Rayon de bordure augmenté
+    borderRadius: 40,
     overflow: 'hidden',
     justifyContent: 'center',
     position: 'relative',
@@ -114,27 +113,28 @@ const styles = StyleSheet.create({
     width: '100%',
     textAlign: 'center',
     color: '#555',
-    fontSize: 20, // Police légèrement plus grande
+    fontSize: 20,
     fontWeight: '600',
   },
   thumb: {
-    width: 80, // Taille du pouce augmentée
-    height: 80,
+    width: 70,
+    height: 70,
     backgroundColor: '#FFFFFF',
-    borderRadius: 40, // Rayon de bordure ajusté
+    borderRadius: 35,
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     position: 'absolute',
+    left: 5,
     justifyContent: 'center',
     alignItems: 'center',
     borderColor: '#E91E63',
     borderWidth: 2,
   },
   thumbText: {
-    fontSize: 24, // Texte plus grand
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#E91E63',
   },

@@ -4,7 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { firebase } from '../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 
+import { useFonts } from 'expo-font';
+
+
+ 
 export default function ListeOffres() {
+   // Charger la police
+   const [fontsLoaded] = useFonts({
+    'ChauPhilomeneOne': require('../assets/fonts/ChauPhilomeneOne.ttf'),
+  });
+
   const [searchText, setSearchText] = useState('');
   const [offres, setOffres] = useState([]);
   const [filteredOffres, setFilteredOffres] = useState([]);
@@ -62,7 +71,7 @@ export default function ListeOffres() {
   const handlePress = (id) => {
     navigation.navigate('detailleOffres', { id });
   };
-
+ 
   const renderOffre = ({ item }) => (
     <TouchableOpacity onPress={() => handlePress(item.id)} style={styles.card}>
       <View style={styles.imageContainer}>

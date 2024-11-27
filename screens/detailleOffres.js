@@ -13,11 +13,11 @@ import { useUserData } from '../hooks/useUserData';
 import InitialSubscriptionModal from '../components/InitialSubscriptionModal';
 import OfferValidationModal from '../components/OfferValidationModal';
 import UserCardModal from '../components/UserCardModal';
-import SubscriptionButton from '../components/SubscriptionButton';
 import Header from '../components/Header';
 import OfferSection from '../components/OfferSection';
 import OfferButton from '../components/OfferButton';
 import CustomSwipeButton from '../components/CustomSwipeButton';
+import SubscriptionButton from '../components/SubscriptionButton';
 
 const DetailleOffres = () => {
   const route = useRoute();
@@ -25,13 +25,16 @@ const DetailleOffres = () => {
   const { id } = route.params;
 
   const { offer, loading } = useOfferData(id);
+
+  const user = firebase.auth().currentUser;
+
   const {
-    userData,
-    userOfferState,
-    initialModalVisible,
-    setInitialModalVisible,
-    setUserOfferState,
-  } = useUserData(id);
+    userData = { abonnement_actif: false },
+    userOfferState = { etat: false },
+    initialModalVisible = false,
+    setInitialModalVisible = () => {},
+    setUserOfferState = () => {},
+  } = user ? useUserData(id) : {};
 
   const [offerDialogVisible, setOfferDialogVisible] = useState(false);
   const [userCardVisible, setUserCardVisible] = useState(false);
@@ -49,7 +52,6 @@ const DetailleOffres = () => {
 
   const handleSwipeSuccess = async () => {
     try {
-      const user = firebase.auth().currentUser;
       if (user) {
         await firebase
           .firestore()
@@ -88,7 +90,6 @@ const DetailleOffres = () => {
       <InitialSubscriptionModal
         visible={initialModalVisible}
         onClose={() => setInitialModalVisible(false)}
-        onSubscribe={handleSubscribe}
       />
 
       <OfferValidationModal
@@ -105,7 +106,12 @@ const DetailleOffres = () => {
         />
       )}
 
-      <ScrollView style={styles.scrollContainer}>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+      >
         <Header
           coverImageUri={offer.couverture}
           onBackPress={() => navigation.navigate('offres')}
@@ -129,7 +135,13 @@ const DetailleOffres = () => {
           />
 
           <View style={styles.buttonContainer}>
-            {!userOfferState?.etat ? (
+            {!userData?.abonnement_actif ? (
+              <OfferButton
+                text="Ma3ndekch abonnement"
+                buttonType={1}
+                isDisabled={true}
+              />
+            ) : !userOfferState?.etat ? (
               <OfferButton text="Offre déjà utilisée" buttonType={1} isDisabled />
             ) : !showSwipeButton ? (
               <OfferButton
@@ -172,9 +184,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F8F8',
+    overflow: 'hidden',
   },
   scrollContainer: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -223,6 +239,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginVertical: 20,
     alignItems: 'center',
+    overflow: 'hidden',
   },
   animatedButtonContainer: {
     position: 'absolute',
