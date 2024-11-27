@@ -129,7 +129,7 @@ const Compte = () => {
         <View style={[styles.profileContainer, abonnementActif && { marginTop: 30 }]}>
           <ProfileOptionCompte
             text="Mes offres générées"
-            onPress={() => {}}
+            onPress={() => navigation.navigate('PromoScreen')}
           />
           <ProfileOptionCompte
             text="Mon abonnement"

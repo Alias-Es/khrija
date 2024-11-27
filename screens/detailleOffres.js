@@ -87,10 +87,12 @@ const DetailleOffres = () => {
 
   return (
     <View style={styles.container}>
-      <InitialSubscriptionModal
-        visible={initialModalVisible}
-        onClose={() => setInitialModalVisible(false)}
-      />
+      {userOfferState?.etat === false && (
+        <InitialSubscriptionModal
+          visible={initialModalVisible}
+          onClose={() => setInitialModalVisible(false)}
+        />
+      )}
 
       <OfferValidationModal
         visible={offerDialogVisible}
@@ -135,7 +137,7 @@ const DetailleOffres = () => {
           />
 
           <View style={styles.buttonContainer}>
-            {!userData?.abonnement_actif ? (
+            {!userData?.abonnement_actif && !userOfferState?.etat ? (
               <OfferButton
                 text="Ma3ndekch abonnement"
                 buttonType={1}
@@ -148,7 +150,7 @@ const DetailleOffres = () => {
                 onPress={() => setOfferDialogVisible(true)}
                 text="Afficher mon offre"
                 buttonType={1}
-                isDisabled={!userOfferState?.etat || !userData?.abonnement_actif}
+                isDisabled={false}
               />
             ) : (
               <CustomSwipeButton onSwipeComplete={handleSwipeSuccess} />

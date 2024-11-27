@@ -10,6 +10,7 @@ import SplashScreen from './splashScreen';
 
 // Importez vos écrans
 import Dkhla from './screens/dkhla';
+import PromoScreen from './screens/PromoScreen';
 import decouvrire from './screens/decouvrire';
 import ntconnecta from './screens/ntconnecta';
 import nt9eyd from './screens/nt9eyd';
@@ -70,6 +71,8 @@ function App() {
           <Stack.Screen name="offres" component={Offres} options={{ gestureEnabled: true }} />
           <Stack.Screen name="ntabonna" component={ntabonna} />
           <Stack.Screen name="detailleOffres" component={detailleOffres} />
+          <Stack.Screen name="PromoScreen" component={PromoScreen} />
+          
           <Stack.Screen name="monAbonnement" component={monAbonnement} />
           <Stack.Screen name="mdpOublier" component={mdpOublier} />
           <Stack.Screen name="dkhla" component={Dkhla} options={{ gestureEnabled: true }} />
