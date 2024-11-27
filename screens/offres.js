@@ -1,16 +1,17 @@
+// ListeOffres.js
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, ActivityIndicator } from 'react-native';
 import { firebase } from '../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-
 import { useFonts } from 'expo-font';
 
+import OfferCard from '../components/offres/OfferCard';
+import CategoriesList from '../components/offres/CategoriesList';
+import SearchBar from '../components/offres/SearchBar';
 
- 
 export default function ListeOffres() {
-   // Charger la police
-   const [fontsLoaded] = useFonts({
+  // Charger la police
+  const [fontsLoaded] = useFonts({
     'ChauPhilomeneOne': require('../assets/fonts/ChauPhilomeneOne.ttf'),
   });
 
@@ -20,7 +21,60 @@ export default function ListeOffres() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingOffres, setLoadingOffres] = useState(true); // Nouvel état pour le chargement des offres
   const navigation = useNavigation();
+
+  // Nouveaux états pour les données utilisateur
+  const [abonnement_actif, setAbonnementActif] = useState(true); // Par défaut true
+  const [offres_etats, setOffresEtats] = useState({});
+  const [dataLoaded, setDataLoaded] = useState(false); // Indicateur de chargement des données utilisateur
+
+  useEffect(() => {
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      console.log("Aucun utilisateur connecté.");
+      setDataLoaded(true);
+      setLoadingOffres(false);
+      setLoadingCategories(false);
+      return;
+    }
+
+    const userId = user.uid;
+    const userDocRef = firebase.firestore().collection('users').doc(userId);
+    const offresEtatsRef = userDocRef.collection('offres_etats');
+
+    // Écouter les modifications du document utilisateur pour abonnement_actif
+    const unsubscribeUser = userDocRef.onSnapshot(doc => {
+      if (doc.exists) {
+        const userData = doc.data();
+        setAbonnementActif(userData.abonnement_actif);
+      } else {
+        console.log("Aucun utilisateur trouvé avec cet ID.");
+      }
+    }, error => {
+      console.error("Erreur lors de l'écoute du document utilisateur:", error);
+    });
+
+    // Écouter les modifications de la sous-collection offres_etats
+    const unsubscribeOffresEtats = offresEtatsRef.onSnapshot(snapshot => {
+      const etats = {};
+      snapshot.forEach(doc => {
+        etats[doc.id] = doc.data().etat;
+      });
+      setOffresEtats(etats);
+    }, error => {
+      console.error("Erreur lors de l'écoute de la sous-collection offres_etats:", error);
+    });
+
+    // Indiquer que les données utilisateur sont chargées
+    setDataLoaded(true);
+
+    // Nettoyage des écouteurs lors du démontage du composant
+    return () => {
+      unsubscribeUser();
+      unsubscribeOffresEtats();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchOffres = async () => {
@@ -30,10 +84,25 @@ export default function ListeOffres() {
         snapshot.forEach(doc => {
           offresData.push({ id: doc.id, ...doc.data() });
         });
+
+        // Trier les offres en fonction de l'abonnement et de l'état
+        if (!abonnement_actif) {
+          offresData.sort((a, b) => {
+            const aEtat = offres_etats[a.id] || false;
+            const bEtat = offres_etats[b.id] || false;
+
+            if (aEtat && !bEtat) return -1; // a en premier
+            if (bEtat && !aEtat) return 1;  // b en premier
+            return 0; // égalité
+          });
+        }
+
         setOffres(offresData);
-        setFilteredOffres(offresData); // Initialiser le filtrage avec toutes les offres
+        setFilteredOffres(offresData); // Initialiser le filtrage avec les offres triées
       } catch (error) {
-        console.error("Erreur lors de la récupération des données:", error);
+        console.error("Erreur lors de la récupération des offres:", error);
+      } finally {
+        setLoadingOffres(false); // Indiquer que les offres sont chargées
       }
     };
 
@@ -42,21 +111,26 @@ export default function ListeOffres() {
         const doc = await firebase.firestore().collection('categories').doc('Uhk2AgyOj4wX6SbaBObD').get();
         if (doc.exists) {
           const data = doc.data();
-          const categoriesData = Object.entries(data).sort((a, b) => a[0].localeCompare(b[0])).map(entry => entry[1]);
+          const categoriesData = Object.entries(data)
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(entry => entry[1]);
           setCategories(categoriesData);
         } else {
           console.log("Aucun document trouvé dans la collection 'categories'");
         }
-        setLoadingCategories(false);
       } catch (error) {
         console.error("Erreur lors de la récupération des catégories:", error);
+      } finally {
         setLoadingCategories(false);
       }
     };
 
-    fetchOffres();
-    fetchCategories();
-  }, []);
+    // Appeler fetchOffres et fetchCategories seulement après avoir récupéré les données utilisateur
+    if (dataLoaded) {
+      fetchOffres();
+      fetchCategories();
+    }
+  }, [abonnement_actif, offres_etats, dataLoaded]);
 
   useEffect(() => {
     // Filtrer les offres à chaque modification de searchText ou selectedCategories
@@ -71,19 +145,6 @@ export default function ListeOffres() {
   const handlePress = (id) => {
     navigation.navigate('detailleOffres', { id });
   };
- 
-  const renderOffre = ({ item }) => (
-    <TouchableOpacity onPress={() => handlePress(item.id)} style={styles.card}>
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: item.couverture || 'https://example.com/default-image.jpg' }} style={styles.image} resizeMode="cover" />
-      </View>
-      <View style={styles.content}>
-        <Text style={styles.name}>{item.nom}</Text>
-        <Text style={styles.offer} numberOfLines={1}>🎁 {item.offreDecouverte}</Text>
-        <Text style={styles.permanentOffer}>♾️ {item.offrePermanente}</Text>
-      </View>
-    </TouchableOpacity>
-  );
 
   const toggleCategory = (category) => {
     setSelectedCategories(prevCategories =>
@@ -93,45 +154,60 @@ export default function ListeOffres() {
     );
   };
 
+  // Mettre à jour les offres lorsque abonnement_actif ou offres_etats changent
+  useEffect(() => {
+    const updateOffres = () => {
+      let sortedOffres = [...offres];
+
+      if (!abonnement_actif) {
+        sortedOffres.sort((a, b) => {
+          const aEtat = offres_etats[a.id] || false;
+          const bEtat = offres_etats[b.id] || false;
+
+          if (aEtat && !bEtat) return -1; // a en premier
+          if (bEtat && !aEtat) return 1;  // b en premier
+          return 0; // égalité
+        });
+      }
+
+      setFilteredOffres(
+        sortedOffres.filter(offre =>
+          offre.nom.toLowerCase().includes(searchText.toLowerCase()) &&
+          (selectedCategories.length === 0 || selectedCategories.includes(offre.categorie))
+        )
+      );
+    };
+
+    updateOffres();
+  }, [abonnement_actif, offres_etats, offres, searchText, selectedCategories]);
+
+  if (!fontsLoaded || !dataLoaded || loadingOffres || loadingCategories) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF4081" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.listHeader}>
         <Text style={styles.appTitle}>KHRIJA</Text>
-        <TextInput
-          style={styles.searchBar}
-          placeholder="Rechercher un nom..."
-          value={searchText}
-          onChangeText={text => setSearchText(text)} // Mettre à jour searchText en temps réel
+        <SearchBar searchText={searchText} setSearchText={setSearchText} />
+        <CategoriesList
+          categories={categories}
+          selectedCategories={selectedCategories}
+          toggleCategory={toggleCategory}
+          loading={loadingCategories}
         />
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesContainer}>
-          {loadingCategories ? (
-            <Text>Chargement des catégories...</Text>
-          ) : (
-            categories.length > 0 ? (
-              categories.map(category => (
-                <TouchableOpacity
-                  key={category}
-                  style={[styles.categoryButton, selectedCategories.includes(category) && styles.categoryButtonActive]}
-                  onPress={() => toggleCategory(category)}
-                >
-                  <Text style={[styles.categoryText, selectedCategories.includes(category) && styles.categoryTextActive]}>
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text>Aucune catégorie disponible</Text>
-            )
-          )}
-        </ScrollView>
       </View>
-      
+
       <FlatList
         data={filteredOffres}
-        renderItem={renderOffre}
+        renderItem={({ item }) => <OfferCard offre={item} onPress={handlePress} />}
         keyExtractor={item => item.id}
         contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
+        ListEmptyComponent={<Text style={styles.emptyText}>Aucune offre trouvée.</Text>}
       />
     </SafeAreaView>
   );
@@ -153,123 +229,21 @@ const styles = StyleSheet.create({
     fontSize: 60,
     fontWeight: 'bold',
     color: '#FF4081',
-  },
-  searchBar: {
-    width: '90%',
-    height: 40,
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    marginTop: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  dropdownList: {
-    width: '90%',
-    backgroundColor: '#FFF',
-    borderRadius: 10,
-    marginTop: 5,
-    maxHeight: 200, // Limite la hauteur de la liste déroulante
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-    position: 'absolute',
-    top: 110, // Positionnez-le juste sous la barre de recherche
-    zIndex: 1,
-    alignSelf: 'center',
-  },
-  dropdownItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  dropdownText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  categoriesContainer: {
-    marginTop: 10,
-    paddingHorizontal: 10,
-  },
-  categoryButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F0F0F0',
-    marginHorizontal: 5,
-  },
-  categoryButtonActive: {
-    backgroundColor: '#FF4081',
-  },
-  categoryText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  categoryTextActive: {
-    color: '#FFF',
+    marginBottom: 10,
   },
   listContent: {
     paddingHorizontal: 10,
     paddingBottom: 20,
   },
-  card: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    marginBottom: 30,
-    width: '96%',
-    alignSelf: 'center',
-    overflow: 'visible',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    marginTop: 50,
-    paddingBottom: 12,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  imageContainer: {
-    width: '25%', // Réduisez la largeur de l'image
-   
-    height: 80,
-    borderRadius: 15,
-    overflow: 'hidden', // Pour que l'arrondi soit appliqué
-    marginTop: -50,
-    alignSelf: 'center', // Centre l'image dans le card
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  content: {
-    paddingHorizontal: 12,
-    paddingTop: 10,
-  },
-  name: {
+  emptyText: {
     textAlign: 'center',
-    fontSize: 25,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  offer: {
-    fontSize: 14,
-    color: '#FF4081',
-    marginBottom: 4,
-    fontWeight: '500',
-  },
-  permanentOffer: {
-    fontSize: 14,
-    color: '#4A90E2',
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 15,
-    paddingVertical: 1,
-    borderRadius: 45,
+    marginTop: 20,
+    fontSize: 16,
+    color: '#888',
   },
 });
-
