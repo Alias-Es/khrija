@@ -16,9 +16,7 @@ const SubscriptionOptionCompte = ({ type, price, period, info1, info2, selected,
         {price} MAD
       </Text>
       <Text style={styles.subscriptionPeriod}>/par {period}</Text>
-      <Text style={styles.subscriptionInfo}>{info1}</Text>
-      <Text style={styles.subscriptionInfo}>{info2}</Text>
-    </TouchableOpacity>
+     </TouchableOpacity>
   );
 };
 

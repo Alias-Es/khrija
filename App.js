@@ -9,6 +9,8 @@ import { firebase } from './FirebaseConfig';
 import SplashScreen from './splashScreen';
 
 // Importez vos écrans
+
+import CreeCompteApple1 from './screens/CreeCompteApple1';
 import Dkhla from './screens/dkhla';
 import PromoScreen from './screens/PromoScreen';
 import decouvrire from './screens/decouvrire';
@@ -22,6 +24,7 @@ import monAbonnement from './screens/monAbonnement';
 import Compte from './screens/compte';
 import NavBar from './NavBar';
 import mdpOublier from './screens/mdpOublier';
+import telephone from './screens/telephone';
 import VerificationCodePage from './screens/VerificationCodePage';
 
 enableScreens(); // Active les optimisations de performance pour les transitions d'écran
@@ -70,9 +73,10 @@ function App() {
         >
           <Stack.Screen name="offres" component={Offres} options={{ gestureEnabled: true }} />
           <Stack.Screen name="ntabonna" component={ntabonna} />
+          <Stack.Screen name="CreeCompteApple1" component={CreeCompteApple1} />
           <Stack.Screen name="detailleOffres" component={detailleOffres} />
           <Stack.Screen name="PromoScreen" component={PromoScreen} />
-          
+          <Stack.Screen name="telephone" component={telephone} />
           <Stack.Screen name="monAbonnement" component={monAbonnement} />
           <Stack.Screen name="mdpOublier" component={mdpOublier} />
           <Stack.Screen name="dkhla" component={Dkhla} options={{ gestureEnabled: true }} />

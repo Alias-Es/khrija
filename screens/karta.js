@@ -73,7 +73,7 @@ const Karta = () => {
 
         {!userInfo?.abonnement_actif && (
           <View style={styles.overlay}>
-            <TouchableOpacity style={styles.subscribeButton} onPress={() => navigation.navigate('mdpOublier')}>
+            <TouchableOpacity style={styles.subscribeButton} onPress={() => navigation.navigate('ntconnecta')}>
               <Text style={styles.subscribeButtonText}>M'ABONNER</Text>
             </TouchableOpacity>
           </View>

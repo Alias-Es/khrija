@@ -33,7 +33,7 @@ export default function NavBar({ activeTab, setActiveTab }) {
         <Animated.View style={{ transform: [{ scale: scale.compte }] }}>
           <FontAwesome5
             name="user"
-            size={30} // Taille légèrement agrandie
+            size={25.5} // Taille réduite de 15%
             color={activeTab === 'compte' ? '#FF4081' : '#75B3EB'}
           />
         </Animated.View>
@@ -46,7 +46,7 @@ export default function NavBar({ activeTab, setActiveTab }) {
         <Animated.View style={{ transform: [{ scale: scale.offres }] }}>
           <FontAwesome5
             name="gift"
-            size={30} // Taille légèrement agrandie
+            size={25.5} // Taille réduite de 15%
             color={activeTab === 'offres' ? '#FF4081' : '#75B3EB'}
           />
         </Animated.View>
@@ -59,7 +59,7 @@ export default function NavBar({ activeTab, setActiveTab }) {
         <Animated.View style={{ transform: [{ scale: scale.karta }] }}>
           <FontAwesome5
             name="credit-card"
-            size={30} // Taille légèrement agrandie
+            size={25.5} // Taille réduite de 15%
             color={activeTab === 'karta' ? '#FF4081' : '#75B3EB'}
           />
         </Animated.View>
@@ -67,6 +67,7 @@ export default function NavBar({ activeTab, setActiveTab }) {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   navBar: {
     flexDirection: 'row',
@@ -90,5 +91,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-
-

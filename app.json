@@ -1,5 +1,6 @@
 {
   "expo": {
+    
     "name": "MonProjetExpo",
     "slug": "MonProjetExpo",
     "newArchEnabled": true,
@@ -14,6 +15,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false  
       }
+      
     },
     "android": {
       "adaptiveIcon": {
@@ -26,9 +28,11 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
+      "googleClientIdIos": "1002817459666-r4l77rj0rifqsn8tqbb9ngc3u65ikp5v.apps.googleusercontent.com",
       "eas": {
         "projectId": "f3f8358c-f26b-43c4-9e27-08453f8b0798"
       }
+      
     }
   }
 }
