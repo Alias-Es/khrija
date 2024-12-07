@@ -3,8 +3,8 @@ import { StyleSheet, View, Text, Alert, ActivityIndicator } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { auth, firebase } from '../../FirebaseConfig';
 import { TouchableOpacity, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
-// Composant bouton personnalisé
 const CustomButton = ({ color, icon, text, textColor, onPress, isLoading }) => (
   <TouchableOpacity
     style={[styles.button, { backgroundColor: color }]}
@@ -24,6 +24,27 @@ const CustomButton = ({ color, icon, text, textColor, onPress, isLoading }) => (
 
 const AuthenticationScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const navigation = useNavigation();
+
+  const checkRegistrationStatus = async (uid) => {
+    try {
+      const userDoc = await firebase.firestore().collection('users').doc(uid).get();
+
+      if (!userDoc.exists) {
+        await firebase.firestore().collection('users').doc(uid).set({
+          isRegistered: false,
+        });
+        return false;
+      }
+
+      const data = userDoc.data();
+      return data.isRegistered || false;
+    } catch (error) {
+      console.error('Erreur lors de la vérification de l’état d’inscription :', error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors de la vérification de votre statut.');
+      return false;
+    }
+  };
 
   const handleAppleSignIn = async () => {
     try {
@@ -49,6 +70,8 @@ const AuthenticationScreen = () => {
       const userCredential = await auth.signInWithCredential(credential);
       const user = userCredential.user;
 
+      console.log('UID de l’utilisateur connecté :', user.uid); // Log pour déboguer
+
       if (appleAuthResponse.fullName) {
         const { givenName, familyName } = appleAuthResponse.fullName;
         if (givenName || familyName) {
@@ -58,7 +81,13 @@ const AuthenticationScreen = () => {
         }
       }
 
-      Alert.alert('Connexion réussie', `Bienvenue, ${user.displayName || 'Utilisateur'} !`);
+      const isRegistered = await checkRegistrationStatus(user.uid);
+
+      if (isRegistered) {
+        navigation.replace('offres');
+      } else {
+        navigation.replace('CreeCompteApple1', { userId: user.uid }); // Utilisation uniforme de `userId`
+      }
     } catch (error) {
       console.error('Erreur lors de la connexion avec Apple :', error);
       Alert.alert('Erreur', error.message || 'Une erreur est survenue lors de la connexion.');
@@ -69,10 +98,9 @@ const AuthenticationScreen = () => {
 
   return (
     <View style={styles.container}>
-     
       <CustomButton
         color="#000"
-        icon={require('../../assets/images/apple.png')} // Remplacez par le chemin de l'icône Apple
+        icon={require('../../assets/images/apple.png')}
         text="Se connecter avec Apple"
         textColor="#fff"
         onPress={handleAppleSignIn}
@@ -82,19 +110,11 @@ const AuthenticationScreen = () => {
   );
 };
 
-// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-   
-    
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
   },
   button: {
     flexDirection: 'row',

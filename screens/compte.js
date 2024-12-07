@@ -60,7 +60,7 @@ const Compte = () => {
   const handleLogout = async () => {
     try {
       await firebase.auth().signOut();
-      navigation.replace('dkhla');
+      navigation.replace('offres');
     } catch (error) {
       Alert.alert('Erreur', 'La déconnexion a échoué. Veuillez réessayer.');
     }

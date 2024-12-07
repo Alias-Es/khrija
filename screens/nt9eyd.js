@@ -1,273 +1,185 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  SafeAreaView,
+  TouchableOpacity,
   Alert,
-  Image,
-  Platform,
 } from 'react-native';
-import { firebase } from '../FirebaseConfig';
-import { useNavigation } from '@react-navigation/native';
-import * as Google from 'expo-auth-session/providers/google';
-import AgePickerModal from '../components/AgePickerModal'; // Import du composant AgePickerModal
+import AgePickerModal from '../components/AgePickerModal';
+import SexePickerModal from '../components/SexePickerModal';
+import StatusPickerModal from '../components/StatusPickerModal';
 
-const Nt9eyd = () => {
-  const navigation = useNavigation();
-  const [form, setForm] = useState({
-    prenom: '',
-    nom: '',
-    email: '',
-    age: '',
-    motDePasse: '',
-  });
-  const [isAgePickerVisible, setIsAgePickerVisible] = useState(false);
+const CreeCompteApple4 = () => {
+  const [age, setAge] = useState(null);
+  const [tempAge, setTempAge] = useState(null);
+  const [sexe, setSexe] = useState(null);
+  const [tempSexe, setTempSexe] = useState(null);
+  const [status, setStatus] = useState(null);
+  const [tempStatus, setTempStatus] = useState(null);
+  const [ageModalVisible, setAgeModalVisible] = useState(false);
+  const [sexeModalVisible, setSexeModalVisible] = useState(false);
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
 
-  // Configuration de l'authentification Google
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: 'VOTRE_EXPO_CLIENT_ID',
-    iosClientId: 'VOTRE_IOS_CLIENT_ID',
-    androidClientId: 'VOTRE_ANDROID_CLIENT_ID',
-  });
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      const credential = firebase.auth.GoogleAuthProvider.credential(id_token);
-
-      firebase
-        .auth()
-        .signInWithCredential(credential)
-        .then((userCredential) => {
-          const userId = userCredential.user.uid;
-          firebase
-            .firestore()
-            .collection('users')
-            .doc(userId)
-            .set(
-              {
-                prenom: userCredential.user.displayName.split(' ')[0],
-                nom: userCredential.user.displayName.split(' ')[1] || '',
-                email: userCredential.user.email,
-                age: '',
-                abonnement_actif: false,
-                periode: null,
-              },
-              { merge: true }
-            );
-          Alert.alert('Connexion réussie', 'Vous êtes connecté avec Google !');
-          navigation.navigate('offres');
-        })
-        .catch((error) => {
-          Alert.alert('Erreur lors de la connexion', error.message);
-        });
-    }
-  }, [response]);
-
-  const handleInputChange = (name, value) => {
-    setForm({ ...form, [name]: value });
-  };
-
-  const handleSignUpWithEmail = () => {
-    const { email, motDePasse, prenom, nom, age } = form;
-
-    if (!prenom || !nom || !email || !motDePasse || !age) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+  const handleFinish = () => {
+    if (!age || !sexe || !status) {
+      Alert.alert('Erreur', 'Veuillez sélectionner un âge, un sexe et un statut.');
       return;
     }
-
-    // Navigation vers l'écran de vérification avec les paramètres
-    navigation.navigate('VerificationCodePage', {
-      formData: { email, motDePasse, prenom, nom, age },
-    });
+    Alert.alert('Succès', `Âge : ${age} ans, Sexe : ${sexe}, Statut : ${status}`);
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>←</Text>
-          </TouchableOpacity>
-          <View style={styles.spacer} />
-          <Text style={styles.logo}>KHRIJA</Text>
-          <View style={styles.spacer} />
-        </View>
-        <Text style={styles.subTitle}>NT9EYD</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>KHRIJA</Text>
+      <Text style={styles.subtitle}>Créez votre profil pour commencer :</Text>
 
-        <View style={styles.form}>
-          {[
-            { name: 'prenom', label: 'Prénom', type: 'text' },
-            { name: 'nom', label: 'Nom', type: 'text' },
-            { name: 'email', label: 'Email', type: 'email' },
-            { name: 'motDePasse', label: 'Mot de passe', type: 'password' },
-          ].map((field, index) => (
-            <View style={styles.inputContainer} key={index}>
-              <Text style={styles.label}>{field.label} *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={field.label}
-                value={form[field.name]}
-                onChangeText={(value) => handleInputChange(field.name, value)}
-                secureTextEntry={field.type === 'password'}
-                keyboardType={field.type === 'email' ? 'email-address' : 'default'}
-                autoCapitalize={field.type === 'email' ? 'none' : 'sentences'}
-              />
-            </View>
-          ))}
+      {/* Bouton pour sélectionner l'âge */}
+      <TouchableOpacity
+        style={[styles.selectButton, age && styles.selectedButton]}
+        onPress={() => {
+          setTempAge(age);
+          setAgeModalVisible(true);
+        }}
+      >
+        <Text style={[styles.selectButtonText, age && styles.selectedButtonText]}>
+          {age ? `Âge : ${age} ans` : 'Sélectionnez votre âge'}
+        </Text>
+      </TouchableOpacity>
 
-          {/* Champ Age avec AgePickerModal */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Âge *</Text>
-            <TouchableOpacity
-              onPress={() => setIsAgePickerVisible(true)}
-              style={styles.input}
-            >
-              <Text
-                style={{
-                  color: form.age ? '#000' : '#888',
-                  fontSize: 16,
-                }}
-              >
-                {form.age ? form.age : 'Sélectionnez votre âge'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.button} onPress={handleSignUpWithEmail}>
-            <Text style={styles.buttonText}>M'abonner</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.orText}>ou</Text>
-
-          <TouchableOpacity
-            style={styles.googleButton}
-            onPress={() => promptAsync()}
-            disabled={!request}
-          >
-            <Image source={require('../assets/images/google.png')} style={styles.googleIcon} />
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      {/* Modal pour le Picker de l'âge */}
       <AgePickerModal
-        visible={isAgePickerVisible}
-        onClose={() => setIsAgePickerVisible(false)}
-        selectedValue={form.age}
-        onValueChange={(value) => handleInputChange('age', value)}
+        visible={ageModalVisible}
+        onClose={() => setAgeModalVisible(false)}
+        tempValue={tempAge}
+        onTempValueChange={setTempAge}
+        onConfirm={() => {
+          setAge(tempAge);
+          setAgeModalVisible(false);
+        }}
       />
-    </SafeAreaView>
+
+      {/* Bouton pour sélectionner le sexe */}
+      <TouchableOpacity
+        style={[styles.selectButton, sexe && styles.selectedButton]}
+        onPress={() => {
+          setTempSexe(sexe);
+          setSexeModalVisible(true);
+        }}
+      >
+        <Text style={[styles.selectButtonText, sexe && styles.selectedButtonText]}>
+          {sexe ? `Sexe : ${sexe}` : 'Sélectionnez votre sexe'}
+        </Text>
+      </TouchableOpacity>
+
+      <SexePickerModal
+        visible={sexeModalVisible}
+        onClose={() => setSexeModalVisible(false)}
+        tempValue={tempSexe}
+        onTempValueChange={setTempSexe}
+        onConfirm={() => {
+          setSexe(tempSexe);
+          setSexeModalVisible(false);
+        }}
+      />
+
+      {/* Bouton pour sélectionner le statut */}
+      <TouchableOpacity
+        style={[styles.selectButton, status && styles.selectedButton]}
+        onPress={() => {
+          setTempStatus(status);
+          setStatusModalVisible(true);
+        }}
+      >
+        <Text style={[styles.selectButtonText, status && styles.selectedButtonText]}>
+          {status ? `Statut : ${status}` : 'Sélectionnez votre statut'}
+        </Text>
+      </TouchableOpacity>
+
+      <StatusPickerModal
+        visible={statusModalVisible}
+        onClose={() => setStatusModalVisible(false)}
+        tempValue={tempStatus}
+        onTempValueChange={setTempStatus}
+        onConfirm={() => {
+          setStatus(tempStatus);
+          setStatusModalVisible(false);
+        }}
+      />
+
+      {/* Bouton pour finaliser */}
+      <TouchableOpacity
+        style={[
+          styles.finishButton,
+          age && sexe && status ? styles.activeFinishButton : null,
+        ]}
+        onPress={handleFinish}
+        disabled={!age || !sexe || !status}
+      >
+        <Text style={styles.finishButtonText}>Créer mon profil</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeContainer: {
-    flex: 1,
-    backgroundColor: '#F8F8F8',
-  },
   container: {
-    flexGrow: 1,
-    padding: 20,
-    paddingBottom: 50,
-  },
-  header: {
-    flexDirection: 'row',
+    flex: 1,
+    backgroundColor: '#F9F9F9',
+    paddingHorizontal: 20,
+    paddingTop: 110,
     alignItems: 'center',
-    marginBottom: 20,
   },
-  backButton: {
-    marginRight: 10,
-  },
-  backButtonText: {
-    fontSize: 24,
-    color: '#E91E63',
-  },
-  logo: {
+  title: {
     fontFamily: 'ChauPhilomeneOne',
-    fontSize: 60,
+    fontSize: 90,
     fontWeight: 'bold',
     color: '#E91E63',
-    textAlign: 'center',
-    marginLeft: -30,
-    marginBottom: -15,
+    marginBottom: 100,
   },
-  spacer: {
-    flex: 1,
+  subtitle: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 30,
   },
-  subTitle: {
-    fontWeight: 'bold',
-    fontSize: 20,
-    color: '#4A90E2',
-    textAlign: 'center',
-    marginBottom: 50,
-  },
-  form: {
-    flex: 1,
-  },
-  inputContainer: {
-    marginBottom: 15,
-  },
-  label: {
-    fontSize: 14,
-    color: '#FF4081',
-    marginBottom: 5,
-  },
-  input: {
+  selectButton: {
+    width: '90%',
+    paddingVertical: 15,
+    marginVertical: 10,
+    borderRadius: 25,
     borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: Platform.OS === 'ios' ? 15 : 10,
-    fontSize: 16,
-    color: '#333',
-    justifyContent: 'center',
+    borderColor: '#CCCCCC',
+    backgroundColor: '#FFF',
+    alignItems: 'center',
+    transition: 'all 0.3s',
   },
-  button: {
+  selectedButton: {
     backgroundColor: '#E91E63',
-    paddingVertical: 10,
-    borderRadius: 30,
-    alignItems: 'center',
-    marginTop: 20,
-    width: 250,
-    height: 50,
-    justifyContent: 'center',
-    alignSelf: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    borderColor: '#E91E63',
   },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-  orText: {
-    textAlign: 'center',
+  selectButtonText: {
+    color: '#000',
     fontSize: 16,
-    color: '#888',
-    marginVertical: 15,
     fontWeight: 'bold',
   },
-  googleButton: {
-    alignItems: 'center',
-    marginTop: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+  selectedButtonText: {
+    color: '#FFF',
   },
-  googleIcon: {
-    width: 250,
-    height: 50,
+  finishButton: {
+    marginTop: 100,
+    width: '90%',
+    paddingVertical: 15,
+    borderRadius: 25,
+    backgroundColor: '#AAA',
+    alignItems: 'center',
+  },
+  activeFinishButton: {
+    backgroundColor: '#4A90E2',
+  },
+  finishButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 
-export default Nt9eyd;
+export default CreeCompteApple4;

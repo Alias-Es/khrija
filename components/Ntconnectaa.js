@@ -1,29 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet ,Platform} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, ScrollView, StyleSheet, Platform, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { firebase } from '../FirebaseConfig';
+import * as firebase from '../FirebaseConfig'; // Importer correctement Firebase
 import AppleAuthButton from './connexion/AppleAuthButton';
 import GoogleAuthButton from './connexion/GoogleAuthButton';
 import CustomButton from './connexion/CustomButton';
 
-firebase.auth().settings.appVerificationDisabledForTesting = true;
-
 const AppleAuthScreen = () => {
   const navigation = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const unsubscribe = firebase.auth().onAuthStateChanged((currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        navigation.navigate('offres');
-      } else {
-        setUser(null);
+  // Vérifier si l'utilisateur est enregistré
+  const checkRegistrationStatus = async (uid) => {
+    try {
+      const userDoc = await firebase.firestore().collection('users').doc(uid).get();
+
+      if (!userDoc.exists) {
+        // Si l'utilisateur n'a pas de document Firestore, créez-en un
+        await firebase.firestore().collection('users').doc(uid).set({
+          isRegistered: false, // Non inscrit par défaut
+        });
+        return false;
       }
-    });
-    return unsubscribe;
-  }, [navigation]);
+
+      const data = userDoc.data();
+      return data.isRegistered || false; // Retourne le statut d'enregistrement
+    } catch (error) {
+      console.error('Erreur lors de la vérification de l’enregistrement :', error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors de la vérification de votre statut.');
+      return false;
+    }
+  };
+
+  // Gérer la redirection après vérification
+  const handleNavigation = async (uid) => {
+    const isRegistered = await checkRegistrationStatus(uid);
+
+    if (isRegistered) {
+      navigation.replace('Offres'); // Rediriger vers l'application si enregistré
+    } else {
+      navigation.replace('CreeCompteApple1', { userId: uid });
+      // Rediriger vers l'inscription
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -41,9 +60,17 @@ const AppleAuthScreen = () => {
           </Text>
           <View style={styles.buttonsContainer}>
             {Platform.OS === 'ios' && (
-              <AppleAuthButton isLoading={isLoading} setIsLoading={setIsLoading} />
+              <AppleAuthButton
+                isLoading={isLoading}
+                setIsLoading={setIsLoading}
+                onAuthSuccess={handleNavigation} // Passer la fonction de gestion ici
+              />
             )}
-            <GoogleAuthButton />
+            <GoogleAuthButton
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+              onAuthSuccess={handleNavigation} // Passer la fonction de gestion ici
+            />
             <CustomButton
               color="#4A90E2"
               icon={require('../assets/images/telephone.png')}
@@ -53,6 +80,7 @@ const AppleAuthScreen = () => {
               onPress={() => navigation.navigate('telephone')}
             />
           </View>
+          {isLoading && <Text style={styles.loadingText}>Chargement...</Text>}
           <Text style={styles.footerText}>
             En continuant, vous acceptez nos{' '}
             <Text style={styles.link}>Conditions d'utilisation</Text> et notre{' '}
@@ -65,7 +93,6 @@ const AppleAuthScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  // Styles restent dans ce fichier
   container: {
     flex: 1,
     alignItems: 'center',
@@ -123,15 +150,11 @@ const styles = StyleSheet.create({
     marginTop: 150,
     marginBottom: 0,
   },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 350,
-    height: 55,
-    borderRadius: 27,
-    marginBottom: 15,
-    borderWidth: 1,
+  loadingText: {
+    marginTop: 20,
+    fontSize: 14,
+    color: '#FF4081',
+    textAlign: 'center',
   },
   footerText: {
     textAlign: 'center',

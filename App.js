@@ -10,7 +10,10 @@ import SplashScreen from './splashScreen';
 
 // Importez vos écrans
 
-import CreeCompteApple1 from './screens/CreeCompteApple1';
+import CreeCompteApple1 from './screens/CompteApple/CreeCompteApple1';
+import CreeCompteApple2 from './screens/CompteApple/CreeCompteApple2';
+import CreeCompteApple3 from './screens/CompteApple/CreeCompteApple3';
+import CreeCompteApple4 from './screens/CompteApple/CreeCompteApple4';
 import Dkhla from './screens/dkhla';
 import PromoScreen from './screens/PromoScreen';
 import decouvrire from './screens/decouvrire';
@@ -74,6 +77,9 @@ function App() {
           <Stack.Screen name="offres" component={Offres} options={{ gestureEnabled: true }} />
           <Stack.Screen name="ntabonna" component={ntabonna} />
           <Stack.Screen name="CreeCompteApple1" component={CreeCompteApple1} />
+          <Stack.Screen name="CreeCompteApple2" component={CreeCompteApple2} />
+          <Stack.Screen name="CreeCompteApple3" component={CreeCompteApple3} />
+          <Stack.Screen name="CreeCompteApple4" component={CreeCompteApple4} />
           <Stack.Screen name="detailleOffres" component={detailleOffres} />
           <Stack.Screen name="PromoScreen" component={PromoScreen} />
           <Stack.Screen name="telephone" component={telephone} />

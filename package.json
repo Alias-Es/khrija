@@ -13,8 +13,10 @@
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/stack": "^6.4.1",
+    "base-64": "^1.0.0",
     "dotenv": "^16.4.5",
     "expo": "^52.0.0",
+    "expo-apple-authentication": "~7.1.2",
     "expo-auth-session": "~6.0.0",
     "expo-font": "~13.0.1",
     "expo-haptics": "~14.0.0",
@@ -30,8 +32,10 @@
     "react-native-animatable": "^1.4.0",
     "react-native-curved-bottom-bar": "^3.3.1",
     "react-native-dotenv": "^3.4.11",
+    "react-native-dropdown-picker": "^5.4.6",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-linear-gradient": "^2.8.3",
+    "react-native-modal": "^13.0.1",
     "react-native-reanimated": "^3.16.3",
     "react-native-safe-area-context": "4.12.0",
     "react-native-screens": "~4.1.0",
@@ -40,8 +44,7 @@
     "react-native-webview": "13.12.2",
     "rn-swipe-button": "^2.0.0",
     "stripe": "^17.3.0",
-    "undefined": "expo-auth-session/providers/google",
-    "expo-apple-authentication": "~7.1.2"
+    "undefined": "expo-auth-session/providers/google"
   },
   "private": true
 }

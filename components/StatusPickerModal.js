@@ -10,14 +10,18 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 
-const AgePickerModal = ({
+const StatusPickerModal = ({
   visible,
   onClose,
   tempValue,
   onTempValueChange,
   onConfirm,
 }) => {
-  const ages = Array.from({ length: 9 }, (_, i) => `${18 + i}`);
+  const statuses = [
+    'Étudiant',
+    'Employé',
+    'En recherche d’opportunités',
+  ];
 
   return (
     <Modal
@@ -30,19 +34,15 @@ const AgePickerModal = ({
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Sélectionnez votre âge :</Text>
+              <Text style={styles.modalTitle}>Sélectionnez votre statut :</Text>
               <Picker
                 selectedValue={tempValue}
                 onValueChange={(value) => onTempValueChange(value || '')}
                 style={styles.picker}
               >
-                <Picker.Item label="Sélectionnez votre âge" value="" />
-                {ages.map((age) => (
-                  <Picker.Item
-                    key={age}
-                    label={`${age} ans`}
-                    value={age}
-                  />
+                <Picker.Item label="Sélectionnez votre statut" value="" />
+                {statuses.map((status) => (
+                  <Picker.Item key={status} label={status} value={status} />
                 ))}
               </Picker>
               <TouchableOpacity style={styles.modalButton} onPress={onConfirm}>
@@ -98,4 +98,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AgePickerModal;
+export default StatusPickerModal;
