@@ -29,7 +29,7 @@ const DetailleOffres = () => {
   const user = firebase.auth().currentUser;
 
   const {
-    userData = { abonnement_actif: false },
+    userData = { abonnement_actif: false, isRegistered: false },
     userOfferState = { etat: false },
     initialModalVisible = false,
     setInitialModalVisible = () => {},
@@ -137,7 +137,13 @@ const DetailleOffres = () => {
           />
 
           <View style={styles.buttonContainer}>
-            {!userData?.abonnement_actif && !userOfferState?.etat ? (
+            {!userData?.isRegistered ? (
+              <OfferButton
+                text="Ma3ndekch abonnement"
+                buttonType={1}
+                isDisabled={true}
+              />
+            ) : !userData?.abonnement_actif && !userOfferState?.etat ? (
               <OfferButton
                 text="Ma3ndekch abonnement"
                 buttonType={1}
