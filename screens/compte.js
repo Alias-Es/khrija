@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, SafeAreaView, Alert } from 'react-native';
 import { firebase } from '../FirebaseConfig';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Ntconnectaa from '../components/Ntconnectaa';
 
 import HeaderCompte from '../components/Compte/HeaderCompte';
@@ -12,54 +12,100 @@ import FooterCompte from '../components/Compte/FooterCompte';
 
 const Compte = () => {
   const navigation = useNavigation();
-  const [user, setUser] = useState(undefined); // Initialisé à undefined
-  const [isRegistered, setIsRegistered] = useState(undefined); // Ajout d'une condition pour le statut d'inscription
+  const [user, setUser] = useState(undefined);
+  const [isRegistered, setIsRegistered] = useState(undefined);
   const [selectedSubscription, setSelectedSubscription] = useState(null);
-  const [abonnementActif, setAbonnementActif] = useState(undefined); // Initialisé à undefined
-  const [prices, setPrices] = useState(undefined); // Initialisé à undefined
+  const [abonnementActif, setAbonnementActif] = useState(undefined);
+  const [prices, setPrices] = useState(undefined);
 
-  useEffect(() => {
-    const initialize = async () => {
-      const currentUser = firebase.auth().currentUser;
-      setUser(currentUser);
+  const fetchUserData = async () => {
+    const currentUser = firebase.auth().currentUser;
+    setUser(currentUser);
 
-      if (currentUser) {
-        const userDoc = await firebase.firestore().collection('users').doc(currentUser.uid).get();
-        if (userDoc.exists) {
-          const data = userDoc.data();
-          setAbonnementActif(data.abonnement_actif);
-          setIsRegistered(data.isRegistered || false); // Ajout du champ isRegistered
-        } else {
-          setAbonnementActif(false);
-          setIsRegistered(false); // Si le document n'existe pas
-        }
+    if (currentUser) {
+      const userDoc = await firebase.firestore().collection('users').doc(currentUser.uid).get();
+      if (userDoc.exists) {
+        const data = userDoc.data();
+        setAbonnementActif(data.abonnement_actif);
+        setIsRegistered(data.isRegistered || false);
+        console.log('isRegistered (fetchUserData):', data.isRegistered || false);
       } else {
-        setAbonnementActif(false); // Si pas d'utilisateur connecté
+        setAbonnementActif(false);
         setIsRegistered(false);
+        console.log('isRegistered (fetchUserData):', false);
       }
+    } else {
+      setAbonnementActif(false);
+      setIsRegistered(false);
+      console.log('isRegistered (fetchUserData):', false);
+    }
 
-      try {
-        const priceDoc = await firebase.firestore().collection('abonnement').doc('prix').get();
-        if (priceDoc.exists) {
-          const data = priceDoc.data();
-          setPrices({ annuel: data.annuel, mensuel: data.mensuel });
-        } else {
-          console.error('Document prix non trouvé');
-          setPrices({ annuel: 0, mensuel: 0 });
-        }
-      } catch (error) {
-        console.error('Erreur lors de la récupération des prix :', error);
+    try {
+      const priceDoc = await firebase.firestore().collection('abonnement').doc('prix').get();
+      if (priceDoc.exists) {
+        const data = priceDoc.data();
+        setPrices({ annuel: data.annuel, mensuel: data.mensuel });
+      } else {
+        console.error('Document prix non trouvé');
         setPrices({ annuel: 0, mensuel: 0 });
       }
-    };
+    } catch (error) {
+      console.error('Erreur lors de la récupération des prix :', error);
+      setPrices({ annuel: 0, mensuel: 0 });
+    }
+  };
 
-    initialize();
+  useEffect(() => {
+    // Initial load
+    fetchUserData();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      // À chaque focus sur cet écran, on refait un check de isRegistered
+      fetchUserData();
+    }, [])
+  );
+
+  // Écouteur temps réel sur isRegistered (si souhaité)
+  // Note: Si vous avez besoin d'un écouteur en temps réel, gardez ce useEffect,
+  // sinon, si vous voulez juste vérifier à chaque navigation, vous pouvez commenter cet écouteur.
+  useEffect(() => {
+    let unsubscribe;
+    if (user) {
+      unsubscribe = firebase.firestore().collection('users').doc(user.uid)
+        .onSnapshot((doc) => {
+          if (doc.exists) {
+            const data = doc.data();
+            const newIsRegistered = data.isRegistered || false;
+            setIsRegistered(newIsRegistered);
+            console.log('isRegistered updated (onSnapshot):', newIsRegistered);
+          } else {
+            setIsRegistered(false);
+            console.log('isRegistered updated (onSnapshot):', false);
+          }
+        });
+    }
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [user]);
+
+  // Écoute les changements de isRegistered
+  useEffect(() => {
+    if (isRegistered === false) {
+      console.log('L’utilisateur n’est pas inscrit.');
+      Alert.alert('Inscription requise', 'Veuillez vous inscrire pour accéder à cette fonctionnalité.');
+    }
+  }, [isRegistered]);
 
   const handleLogout = async () => {
     try {
       await firebase.auth().signOut();
-      navigation.replace('offres');
+      navigation.navigate('offres');
     } catch (error) {
       Alert.alert('Erreur', 'La déconnexion a échoué. Veuillez réessayer.');
     }
@@ -68,20 +114,13 @@ const Compte = () => {
   const handleSubscriptionSelect = (subscriptionType) => {
     setSelectedSubscription(subscriptionType);
   };
- // Afficher Ntconnectaa si l'utilisateur n'est pas inscrit (première vérification)
+
   if (isRegistered === false) {
     return <Ntconnectaa />;
   }
-  // Si les données ne sont pas chargées, afficher un écran de chargement minimal
+
   if (user === undefined || abonnementActif === undefined || prices === undefined || isRegistered === undefined) {
-    return null; // Ne rien rendre
-  }
-
- 
-
-  // Afficher Ntconnectaa si l'utilisateur n'est pas authentifié
-  if (!user) {
-    return <Ntconnectaa />;
+    return null;
   }
 
   return (

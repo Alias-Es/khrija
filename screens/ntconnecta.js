@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Alert,
+} from 'react-native';
 import { firebase } from '../FirebaseConfig';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Ntconnecta({ navigation }) {
   const [email, setEmail] = useState('');
@@ -9,11 +18,9 @@ export default function Ntconnecta({ navigation }) {
   const handleLogin = async () => {
     try {
       await firebase.auth().signInWithEmailAndPassword(email, password);
-      // Redirection après connexion réussie, sans possibilité de retour en arrière
       navigation.replace('offres');
     } catch (err) {
-      // Afficher l'erreur dans une alerte
-      Alert.alert("OUPSS", getErrorMessage(err.code, email));
+      Alert.alert('Erreur', getErrorMessage(err.code, email));
     }
   };
 
@@ -21,69 +28,72 @@ export default function Ntconnecta({ navigation }) {
     // Implémentation de la connexion via Google
   };
 
-  // Fonction pour personnaliser les messages d'erreur
   const getErrorMessage = (errorCode, emailEntered) => {
     switch (errorCode) {
       case 'auth/invalid-email':
-        return "E-mail GHALAT.";
+        return 'Adresse email invalide.';
       case 'auth/user-not-found':
         return "Aucun compte trouvé avec cet email.";
       case 'auth/wrong-password':
-        return emailEntered ? "mot de passe GHALAT" : "Le mot de passe est incorrect.";
+        return emailEntered ? 'Mot de passe incorrect.' : 'Le mot de passe est incorrect.';
       case 'auth/too-many-requests':
-        return "Trop de tentatives. Veuillez réessayer plus tard.";
+        return 'Trop de tentatives. Veuillez réessayer plus tard.';
       default:
-        return "Mot de passe GHALAT.";
+        return 'Erreur inconnue.';
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>KHRIJA</Text>
-      <Text style={styles.subtitle}>NTCONNECTA</Text>
+      <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
 
-      <Text style={styles.label}>E-mail *</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="E-mail"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+      {/* Champ Email */}
+      <View style={styles.inputContainer}>
+        <Ionicons name="mail" size={20} color="#888" style={styles.inputIcon} />
+        <TextInput
+          style={styles.input}
+          placeholder="Adresse email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+      </View>
 
-      <Text style={styles.label}>Mot de passe *</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Mot de passe"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      {/* Champ Mot de passe */}
+      <View style={styles.inputContainer}>
+        <Ionicons name="lock-closed" size={20} color="#888" style={styles.inputIcon} />
+        <TextInput
+          style={styles.input}
+          placeholder="Mot de passe"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+      </View>
 
+      {/* Bouton Connexion */}
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>BSMELLAH</Text>
+        <Text style={styles.buttonText}>Se connecter</Text>
       </TouchableOpacity>
 
-      {/* Texte "OU" entre les boutons */}
-      <Text style={styles.ouText}>ou</Text>
+      {/* Texte OU */}
+      <Text style={styles.orText}>ou</Text>
 
-      {/* Bouton Google Authentification */}
+      {/* Bouton Google */}
       <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
         <Image source={require('../assets/images/google.png')} style={styles.googleIcon} />
       </TouchableOpacity>
 
+      {/* Lien inscription */}
       <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-        <Text style={styles.registerText}>BA9E GA3MA 3NDI COMPTE </Text>
+        <Text style={styles.registerText}>Créer un compte</Text>
       </TouchableOpacity>
 
+      {/* Lien mot de passe oublié */}
       <TouchableOpacity onPress={() => navigation.navigate('mdpOublier')}>
-        <Text style={styles.forgotPassword}>Nssit Mot de passe dyali ?</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.footerText}>L9eti chi mouchkil bch tconnecta ?</Text>
-      <TouchableOpacity>
-        <Text style={styles.contactText}>Twassel m3ana !</Text>
+        <Text style={styles.forgotPassword}>Mot de passe oublié ?</Text>
       </TouchableOpacity>
     </View>
   );
@@ -97,47 +107,44 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
   },
   title: {
-    fontFamily: 'ChauPhilomeneOne',
-    fontSize: 100,
+    fontSize: 36,
     fontWeight: 'bold',
     color: '#FF4081',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   subtitle: {
-    fontWeight: 'bold',
-    fontSize: 20,
-    color: '#4A90E2',
+    fontSize: 18,
+    color: '#666',
     textAlign: 'center',
     marginBottom: 20,
   },
-  label: {
-    color: '#FF4081',
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  input: {
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#DDD',
     borderRadius: 25,
-    padding: 10,
+    paddingHorizontal: 10,
     marginBottom: 15,
+    backgroundColor: '#FFF',
+  },
+  inputIcon: {
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
+    height: 45,
+    fontSize: 16,
+    color: '#333',
   },
   button: {
     backgroundColor: '#FF4081',
     borderRadius: 25,
     paddingVertical: 12,
     alignItems: 'center',
-    marginVertical: 10,
-    width: 250,
-    height: 45,
     justifyContent: 'center',
-    alignSelf: 'center',
-    // Effet d'ombre
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    marginVertical: 10,
     elevation: 5,
   },
   buttonText: {
@@ -145,22 +152,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  ouText: {
+  orText: {
     fontSize: 16,
-    fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 10,
+    color: '#888',
   },
   googleButton: {
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 16,
-    // Effet d'ombre
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
   },
   googleIcon: {
     width: 250,
@@ -171,22 +172,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     fontSize: 16,
-  },
-  forgotPassword: {
-    color: '#000000',
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  footerText: {
-    textAlign: 'center',
-    color: '#FF4081',
-    marginTop: 30,
-  },
-  contactText: {
-    color: '#FF4081',
-    textAlign: 'center',
     fontWeight: 'bold',
   },
+  forgotPassword: {
+    color: '#FF4081',
+    textAlign: 'center',
+    marginTop: 10,
+    fontSize: 14,
+  },
 });
-
-

@@ -1,37 +1,52 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator, TouchableOpacity, Animated } from 'react-native';
 import { firebase } from '../FirebaseConfig';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const Karta = () => {
   const [userInfo, setUserInfo] = useState(null);
+  const [isRegistered, setIsRegistered] = useState(undefined); // Ajout de la condition d'inscription
   const [loading, setLoading] = useState(true);
   const opacity = new Animated.Value(0); // Opacité pour l'animation de fade-in
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      const user = firebase.auth().currentUser;
-      if (user) {
-        try {
-          const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
-          if (userDoc.exists) {
-            setUserInfo(userDoc.data());
-          } else {
-            console.log("Document de l'utilisateur non trouvé !");
-          }
-        } catch (error) {
-          console.error("Erreur lors de la récupération des informations de l'utilisateur:", error);
+  const fetchUserInfo = async () => {
+    const user = firebase.auth().currentUser;
+    if (user) {
+      try {
+        const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          const data = userDoc.data();
+          setUserInfo(data);
+          setIsRegistered(data.isRegistered || false); // Ajout de isRegistered
+        } else {
+          console.log("Document de l'utilisateur non trouvé !");
+          setIsRegistered(false);
         }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des informations de l'utilisateur:", error);
+        setIsRegistered(false);
       }
-      setLoading(false);
-    };
+    } else {
+      setIsRegistered(false);
+    }
+    setLoading(false);
+  };
 
-    fetchUserInfo();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      setLoading(true); // Réinitialise l'état de chargement
+      fetchUserInfo();
+
+      // Nettoyage si nécessaire
+      return () => {
+        console.log('Écran Karta a perdu le focus.');
+      };
+    }, [])
+  );
 
   // Démarre l'animation de fade-in quand les données sont chargées
-  useEffect(() => {
+  React.useEffect(() => {
     if (!loading) {
       Animated.timing(opacity, {
         toValue: 1,
@@ -45,6 +60,23 @@ const Karta = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#E91E63" />
+      </View>
+    );
+  }
+
+  // Redirection si l'utilisateur n'est pas connecté ou n'est pas enregistré
+  if (!firebase.auth().currentUser || !isRegistered) {
+    console.log("Utilisateur non connecté ou non enregistré. Redirection...");
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>
+          Vous devez être connecté et enregistré pour accéder à cette page.
+        </Text>
+        <TouchableOpacity
+          style={styles.subscribeButton}
+          onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.subscribeButtonText}>Se connecter</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -186,6 +218,12 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#E91E63',
+    marginBottom: 20,
+    textAlign: 'center',
   },
 });
 

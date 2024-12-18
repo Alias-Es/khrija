@@ -1,27 +1,28 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 
-export default function NavBar({ activeTab, setActiveTab }) {
-  const navigation = useNavigation();
-  const [scale] = useState({
-    compte: new Animated.Value(1),
+export default function NavBar({ state, navigation }) {
+  const [scale] = React.useState({
     offres: new Animated.Value(1),
+    compte: new Animated.Value(1),
     karta: new Animated.Value(1),
   });
 
+  useEffect(() => {
+    // Synchronise les animations selon l'onglet actif
+    const currentTab = state.routeNames[state.index];
+    Object.keys(scale).forEach((key) => {
+      Animated.spring(scale[key], {
+        toValue: key === currentTab.toLowerCase() ? 1.3 : 1, // Agrandir l'onglet actif
+        friction: 3,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [state.index]);
+
   const handlePress = (tab) => {
-    // Reset all scales
-    Object.keys(scale).forEach((key) => scale[key].setValue(1));
-    // Scale up the pressed tab
-    Animated.spring(scale[tab], {
-      toValue: 1.3, // Taille augmentée
-      friction: 3,
-      useNativeDriver: true,
-    }).start();
-    setActiveTab(tab);
-    navigation.navigate(tab);
+    navigation.navigate(tab); // Naviguer vers l'onglet
   };
 
   return (
@@ -33,12 +34,11 @@ export default function NavBar({ activeTab, setActiveTab }) {
         <Animated.View style={{ transform: [{ scale: scale.compte }] }}>
           <FontAwesome5
             name="user"
-            size={25.5} // Taille réduite de 15%
-            color={activeTab === 'compte' ? '#FF4081' : '#75B3EB'}
+            size={25.5}
+            color={state.index === 0 ? '#FF4081' : '#75B3EB'}
           />
         </Animated.View>
       </TouchableOpacity>
-
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => handlePress('offres')}
@@ -46,12 +46,11 @@ export default function NavBar({ activeTab, setActiveTab }) {
         <Animated.View style={{ transform: [{ scale: scale.offres }] }}>
           <FontAwesome5
             name="gift"
-            size={25.5} // Taille réduite de 15%
-            color={activeTab === 'offres' ? '#FF4081' : '#75B3EB'}
+            size={25.5}
+            color={state.index === 1 ? '#FF4081' : '#75B3EB'}
           />
         </Animated.View>
       </TouchableOpacity>
-
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => handlePress('karta')}
@@ -59,8 +58,8 @@ export default function NavBar({ activeTab, setActiveTab }) {
         <Animated.View style={{ transform: [{ scale: scale.karta }] }}>
           <FontAwesome5
             name="credit-card"
-            size={25.5} // Taille réduite de 15%
-            color={activeTab === 'karta' ? '#FF4081' : '#75B3EB'}
+            size={25.5}
+            color={state.index === 2 ? '#FF4081' : '#75B3EB'}
           />
         </Animated.View>
       </TouchableOpacity>

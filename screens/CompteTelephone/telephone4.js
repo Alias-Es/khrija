@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Alert, 
-  ActivityIndicator 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AgePickerModal from '../../components/AgePickerModal';
@@ -13,14 +13,13 @@ import SexePickerModal from '../../components/SexePickerModal';
 import StatusPickerModal from '../../components/StatusPickerModal';
 import { firebase } from '../../FirebaseConfig';
 
-const CreeCompteApple4 = () => {
+const Telephone5 = () => {
   const route = useRoute();
   const navigation = useNavigation();
 
-  // Extraction des paramètres de navigation
-  const { userId, nom, prenom } = route.params || {};
+  const { nom, prenom } = route.params || {};
 
-  // États pour les sélections et modaux
+  const [userId, setUserId] = useState(null);
   const [age, setAge] = useState(null);
   const [tempAge, setTempAge] = useState(null);
   const [sexe, setSexe] = useState(null);
@@ -28,30 +27,34 @@ const CreeCompteApple4 = () => {
   const [status, setStatus] = useState(null);
   const [tempStatus, setTempStatus] = useState(null);
 
-  // États des modaux
   const [ageModalVisible, setAgeModalVisible] = useState(false);
   const [sexeModalVisible, setSexeModalVisible] = useState(false);
   const [statusModalVisible, setStatusModalVisible] = useState(false);
 
-  // État de chargement
   const [isLoading, setIsLoading] = useState(false);
 
-  // Validation des données
+  // Récupérer l'utilisateur connecté
+  useEffect(() => {
+    const currentUser = firebase.auth().currentUser;
+    if (currentUser) {
+      setUserId(currentUser.uid);
+    } else {
+      Alert.alert('Erreur', 'Utilisateur non authentifié. Veuillez vous reconnecter.');
+      navigation.navigate('telephone1'); // Redirige vers une page de connexion
+    }
+  }, [navigation]);
+
   const isFormValid = age && sexe && status;
 
-  // Validation des données utilisateur
   const validateUserData = useCallback(() => {
     const errors = [];
-
-    if (!userId) errors.push("Identifiant utilisateur manquant");
-    if (!age) errors.push("Âge non sélectionné");
-    if (!sexe) errors.push("Sexe non sélectionné");
-    if (!status) errors.push("Statut non sélectionné");
-
+    if (!userId) errors.push('Identifiant utilisateur manquant');
+    if (!age) errors.push('Âge non sélectionné');
+    if (!sexe) errors.push('Sexe non sélectionné');
+    if (!status) errors.push('Statut non sélectionné');
     return errors;
   }, [userId, age, sexe, status]);
 
-  // Gestion de la création ou mise à jour du compte utilisateur
   const handleFinish = async () => {
     const validationErrors = validateUserData();
     if (validationErrors.length > 0) {
@@ -62,11 +65,6 @@ const CreeCompteApple4 = () => {
     setIsLoading(true);
 
     try {
-      const currentUser = firebase.auth().currentUser;
-      if (!currentUser) {
-        throw new Error('Utilisateur non authentifié');
-      }
-
       const userRef = firebase.firestore().collection('users').doc(userId);
 
       const userData = {
@@ -85,46 +83,29 @@ const CreeCompteApple4 = () => {
       const existingUser = await userRef.get();
 
       if (existingUser.exists) {
-        // Mise à jour des données si le profil existe
-        console.log('Mise à jour des données utilisateur existantes.');
         await userRef.update(userData);
       } else {
-        // Création du profil utilisateur
-        console.log('Création d’un nouveau profil utilisateur.');
         userData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         await userRef.set(userData);
       }
 
-      console.log('Données utilisateur sauvegardées avec succès.');
-
-      // Gestion des offres
       const offresSnapshot = await firebase.firestore().collection('offres').get();
       const batch = firebase.firestore().batch();
-     
-      
 
       offresSnapshot.forEach((offreDoc) => {
         const offreEtatRef = userRef.collection('offres_etats').doc(offreDoc.id);
-        batch.set(offreEtatRef, { 
-          etat: false, 
-          offreId: offreDoc.id 
+        batch.set(offreEtatRef, {
+          etat: false,
+          offreId: offreDoc.id,
         });
       });
 
       await batch.commit();
-      console.log('États des offres enregistrés avec succès.');
 
-      Alert.alert(
-        'Inscription réussie',
-        'Votre profil a été mis à jour avec succès.',
-       
-      ); 
-      
-      navigation.navigate('MainTabs', { screen: 'offres' });
-
-      
+      Alert.alert('Inscription réussie', 'Votre profil a été mis à jour.', [
+        { text: 'OK', onPress: () => navigation.navigate('MainTabs', { screen: 'offres' }) },
+      ]);
     } catch (error) {
-      console.error('Erreur lors de la gestion du profil utilisateur :', error);
       Alert.alert('Erreur', `Une erreur est survenue : ${error.message}`);
     } finally {
       setIsLoading(false);
@@ -138,9 +119,8 @@ const CreeCompteApple4 = () => {
         Bonjour {prenom || 'Utilisateur'}, finalisez votre profil :
       </Text>
 
-      {/* Sélection de l'âge */}
       <TouchableOpacity
-        style={styles.selectButton}
+        style={[styles.selectButton, age && styles.selectedShadow]}
         onPress={() => {
           setTempAge(age);
           setAgeModalVisible(true);
@@ -161,9 +141,8 @@ const CreeCompteApple4 = () => {
         }}
       />
 
-      {/* Sélection du sexe */}
       <TouchableOpacity
-        style={styles.selectButton}
+        style={[styles.selectButton, sexe && styles.selectedShadow]}
         onPress={() => {
           setTempSexe(sexe);
           setSexeModalVisible(true);
@@ -184,9 +163,8 @@ const CreeCompteApple4 = () => {
         }}
       />
 
-      {/* Sélection du statut */}
       <TouchableOpacity
-        style={styles.selectButton}
+        style={[styles.selectButton, status && styles.selectedShadow]}
         onPress={() => {
           setTempStatus(status);
           setStatusModalVisible(true);
@@ -207,7 +185,6 @@ const CreeCompteApple4 = () => {
         }}
       />
 
-      {/* Bouton de finalisation */}
       <TouchableOpacity
         style={[
           styles.finishButton,
@@ -229,55 +206,59 @@ const CreeCompteApple4 = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     paddingHorizontal: 20,
-    paddingTop: 110,
     alignItems: 'center',
+    paddingTop: 150,
   },
   title: {
-    fontFamily: 'ChauPhilomeneOne',
-    fontSize: 90,
+    fontSize: 40,
     fontWeight: 'bold',
-    color: '#E91E63',
-    marginBottom: 100,
+    color: '#FF4081',
+    marginBottom: 20,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#555',
-    marginBottom: 30,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
     textAlign: 'center',
   },
   selectButton: {
-    width: '90%',
+    width: '100%',
     paddingVertical: 15,
     marginVertical: 10,
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: '#CCCCCC',
+    borderColor: '#ddd',
     backgroundColor: '#FFF',
     alignItems: 'center',
   },
+  selectedShadow: {
+    shadowColor: '#4A90E2',
+    shadowOpacity: 0.7,
+  },
   selectButtonText: {
-    color: '#000000',
     fontSize: 16,
+    color: '#333',
     fontWeight: 'bold',
   },
   finishButton: {
-    marginTop: 100,
-    width: '90%',
+    marginTop: 40,
+    width: '100%',
     paddingVertical: 15,
     borderRadius: 25,
     backgroundColor: '#AAA',
     alignItems: 'center',
   },
   activeFinishButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#FF4081',
   },
   finishButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
+    color: '#FFF',
     fontWeight: 'bold',
+    fontSize: 18,
   },
 });
 
-export default CreeCompteApple4;
+export default Telephone5;

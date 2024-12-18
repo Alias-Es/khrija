@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useContext } from 'react';
+import { StyleSheet, View, Text, Alert, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { auth, firebase } from '../../FirebaseConfig';
-import { TouchableOpacity, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { LanguageContext } from '../../LanguageContext'; // Import du contexte de langue
 
 const CustomButton = ({ color, icon, text, textColor, onPress, isLoading }) => (
   <TouchableOpacity
@@ -25,6 +25,8 @@ const CustomButton = ({ color, icon, text, textColor, onPress, isLoading }) => (
 const AuthenticationScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
+  const { language, translations } = useContext(LanguageContext); // Utilisation du contexte de langue
+  const t = (key) => translations[language][key]; // Fonction pour récupérer les traductions
 
   const checkRegistrationStatus = async (uid) => {
     try {
@@ -40,8 +42,8 @@ const AuthenticationScreen = () => {
       const data = userDoc.data();
       return data.isRegistered || false;
     } catch (error) {
-      console.error('Erreur lors de la vérification de l’état d’inscription :', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors de la vérification de votre statut.');
+      console.error(t('checkStatusError'), error);
+      Alert.alert(t('error'), t('checkStatusError'));
       return false;
     }
   };
@@ -58,7 +60,7 @@ const AuthenticationScreen = () => {
       });
 
       if (!appleAuthResponse.identityToken) {
-        throw new Error('Aucun token d’identité reçu d’Apple');
+        throw new Error(t('noIdentityTokenError'));
       }
 
       const provider = new firebase.auth.OAuthProvider('apple.com');
@@ -69,8 +71,6 @@ const AuthenticationScreen = () => {
 
       const userCredential = await auth.signInWithCredential(credential);
       const user = userCredential.user;
-
-      console.log('UID de l’utilisateur connecté :', user.uid); // Log pour déboguer
 
       if (appleAuthResponse.fullName) {
         const { givenName, familyName } = appleAuthResponse.fullName;
@@ -84,13 +84,13 @@ const AuthenticationScreen = () => {
       const isRegistered = await checkRegistrationStatus(user.uid);
 
       if (isRegistered) {
-        navigation.replace('offres');
+        navigation.navigate('offres');
       } else {
-        navigation.replace('CreeCompteApple1', { userId: user.uid }); // Utilisation uniforme de `userId`
+        navigation.replace('CreeCompteApple1', { userId: user.uid });
       }
     } catch (error) {
-      console.error('Erreur lors de la connexion avec Apple :', error);
-      Alert.alert('Erreur', error.message || 'Une erreur est survenue lors de la connexion.');
+      console.error(t('appleSignInError'), error);
+      Alert.alert(t('error'), error.message || t('appleSignInError'));
     } finally {
       setIsLoading(false);
     }
@@ -101,7 +101,7 @@ const AuthenticationScreen = () => {
       <CustomButton
         color="#000"
         icon={require('../../assets/images/apple.png')}
-        text="Se connecter avec Apple"
+        text={t('signInWithApple')}
         textColor="#fff"
         onPress={handleAppleSignIn}
         isLoading={isLoading}
@@ -123,9 +123,9 @@ const styles = StyleSheet.create({
     width: 350,
     height: 55,
     borderRadius: 27,
-    marginBottom: 15,
     borderWidth: 1,
     borderColor: 'transparent',
+    marginTop: 10,
   },
   buttonIcon: {
     width: 24,

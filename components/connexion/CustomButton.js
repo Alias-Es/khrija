@@ -13,7 +13,7 @@ const CustomButton = ({ color, icon, text, textColor, borderColor, accessibility
       width: 350,
       height: 55,
       borderRadius: 27,
-      marginBottom: 15,
+      
     }}
     accessibilityLabel={accessibilityLabel}
     onPress={onPress}
