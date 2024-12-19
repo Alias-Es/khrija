@@ -1,8 +1,7 @@
-// SubscriptionOptionCompte.js
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 
-const SubscriptionOptionCompte = ({ type, price, period, info1, info2, selected, onSelect }) => {
+const SubscriptionOptionCompte = ({ type, price, period, info1, info2, info3, selected, onSelect }) => {
   return (
     <TouchableOpacity
       style={[
@@ -16,7 +15,10 @@ const SubscriptionOptionCompte = ({ type, price, period, info1, info2, selected,
         {price} MAD
       </Text>
       <Text style={styles.subscriptionPeriod}>/par {period}</Text>
-     </TouchableOpacity>
+      <Text style={styles.subscriptionInfo}>{info1}</Text>
+      <Text style={styles.subscriptionInfo}>{info2}</Text>
+     
+    </TouchableOpacity>
   );
 };
 
@@ -67,6 +69,12 @@ const styles = StyleSheet.create({
     color: '#777',
     textAlign: 'center',
     marginTop: 5,
+  },
+  subscriptionExtraInfo: { /* Style ajouté */
+    fontSize: 11,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 10,
   },
 });
 

@@ -8,6 +8,7 @@ import {
   Animated,
   FlatList,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { firebase } from '../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
@@ -17,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import OfferCard from '../components/offres/OfferCard';
 import CategoriesList from '../components/offres/CategoriesList';
 import SearchBar from '../components/offres/SearchBar';
-import LanguagePickerModal from '../components/LanguagePickerModal'; 
+import LanguagePickerModal from '../components/LanguagePickerModal';
 import { LanguageContext } from '../LanguageContext';
 
 export default function ListeOffres() {
@@ -32,6 +33,7 @@ export default function ListeOffres() {
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingOffres, setLoadingOffres] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   const { language, setLanguage, translations } = useContext(LanguageContext);
@@ -42,44 +44,44 @@ export default function ListeOffres() {
 
   const t = (key) => translations[language][key];
 
+  const fetchOffres = async () => {
+    const offresData = [];
+    try {
+      const snapshot = await firebase.firestore().collection('offres').get();
+      snapshot.forEach((doc) => {
+        offresData.push({ id: doc.id, ...doc.data() });
+      });
+      setOffres(offresData);
+      setFilteredOffres(offresData);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des offres:', error);
+    } finally {
+      setLoadingOffres(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const doc = await firebase
+        .firestore()
+        .collection('categories')
+        .doc('Uhk2AgyOj4wX6SbaBObD')
+        .get();
+      if (doc.exists) {
+        const data = doc.data();
+        const categoriesData = Object.entries(data)
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map((entry) => entry[1]);
+        setCategories(categoriesData);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des catégories:', error);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchOffres = async () => {
-      const offresData = [];
-      try {
-        const snapshot = await firebase.firestore().collection('offres').get();
-        snapshot.forEach((doc) => {
-          offresData.push({ id: doc.id, ...doc.data() });
-        });
-        setOffres(offresData);
-        setFilteredOffres(offresData);
-      } catch (error) {
-        console.error('Erreur lors de la récupération des offres:', error);
-      } finally {
-        setLoadingOffres(false);
-      }
-    };
-
-    const fetchCategories = async () => {
-      try {
-        const doc = await firebase
-          .firestore()
-          .collection('categories')
-          .doc('Uhk2AgyOj4wX6SbaBObD')
-          .get();
-        if (doc.exists) {
-          const data = doc.data();
-          const categoriesData = Object.entries(data)
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map((entry) => entry[1]);
-          setCategories(categoriesData);
-        }
-      } catch (error) {
-        console.error('Erreur lors de la récupération des catégories:', error);
-      } finally {
-        setLoadingCategories(false);
-      }
-    };
-
     fetchOffres();
     fetchCategories();
   }, []);
@@ -98,6 +100,13 @@ export default function ListeOffres() {
     navigation.navigate('detailleOffres', { id });
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchOffres();
+    await fetchCategories();
+    setRefreshing(false);
+  };
+
   if (!fontsLoaded || loadingOffres || loadingCategories) {
     return (
       <View style={styles.loadingContainer}>
@@ -114,16 +123,15 @@ export default function ListeOffres() {
 
   const searchBarScale = scrollY.interpolate({
     inputRange: [0, 50],
-    outputRange: [1, 0.9], // Échelle initiale et rétrécie
+    outputRange: [1, 0.9],
     extrapolate: 'clamp',
   });
-  
+
   const searchBarTranslateX = scrollY.interpolate({
     inputRange: [0, 100],
-    outputRange: [0, -20], // Décalage vers la gauche lorsqu'elle rétrécit
+    outputRange: [0, -20],
     extrapolate: 'clamp',
   });
-  
 
   const renderLogoHeader = () => (
     <View style={styles.logoHeaderWrapper}>
@@ -136,24 +144,23 @@ export default function ListeOffres() {
   const renderStickyHeader = () => (
     <View style={styles.stickyHeader}>
       <View style={styles.topRowContainer}>
-      <Animated.View
-  style={[
-    styles.searchBarContainer,
-    {
-      transform: [
-        { scaleX: searchBarScale },
-        { translateX: searchBarTranslateX },
-      ],
-    },
-  ]}
->
-  <SearchBar
-    searchText={searchText}
-    setSearchText={setSearchText}
-    placeholder={t('searchPlaceholder')}
-  />
-</Animated.View>
-
+        <Animated.View
+          style={[
+            styles.searchBarContainer,
+            {
+              transform: [
+                { scaleX: searchBarScale },
+                { translateX: searchBarTranslateX },
+              ],
+            },
+          ]}
+        >
+          <SearchBar
+            searchText={searchText}
+            setSearchText={setSearchText}
+            placeholder={t('searchPlaceholder')}
+          />
+        </Animated.View>
       </View>
       <View style={styles.categoriesContainer}>
         <CategoriesList
@@ -201,6 +208,9 @@ export default function ListeOffres() {
           { useNativeDriver: true }
         )}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       />
       <LanguagePickerModal
         visible={showLanguageModal}
@@ -256,13 +266,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
-
   },
   searchBarContainer: {
     alignSelf: 'center',
     height: 60,
     width: '110%',
-    
     overflow: 'hidden',
   },
   categoriesContainer: {

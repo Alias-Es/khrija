@@ -30,7 +30,7 @@ const AppleAuthScreen = () => {
       return data.isRegistered || false;
     } catch (error) {
       console.error('Erreur lors de la vérification de l’enregistrement :', error);
-      Alert.alert(t('errorTitle'), t('errorMessage'));
+      Alert.alert(t('errorTitle'), t('Vous avez rencontré une erreur'));
       return false;
     }
   };

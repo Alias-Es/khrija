@@ -13,8 +13,6 @@ import { LanguageProvider, LanguageContext } from './LanguageContext';
 
 // Importez vos écrans
 import CreeCompteApple1 from './screens/CompteApple/CreeCompteApple1';
-import CreeCompteApple2 from './screens/CompteApple/CreeCompteApple2';
-import CreeCompteApple3 from './screens/CompteApple/CreeCompteApple3';
 import CreeCompteApple4 from './screens/CompteApple/CreeCompteApple4';
 import Dkhla from './screens/dkhla';
 import PromoScreen from './screens/PromoScreen';
@@ -97,9 +95,7 @@ function App() {
             <Stack.Screen name="VerificationCodePage" component={VerificationCodePage} />
             <Stack.Screen name="nt9eyd" component={nt9eyd} />
             <Stack.Screen name="CreeCompteApple1" component={CreeCompteApple1} />
-            <Stack.Screen name="CreeCompteApple2" component={CreeCompteApple2} />
-            <Stack.Screen name="CreeCompteApple3" component={CreeCompteApple3} />
-            <Stack.Screen name="CreeCompteApple4" component={CreeCompteApple4} />
+             <Stack.Screen name="CreeCompteApple4" component={CreeCompteApple4} />
             <Stack.Screen name="telephone1" component={telephone1} />
             <Stack.Screen name="telephone2" component={telephone2} />
             <Stack.Screen name="telephone3" component={telephone3} />

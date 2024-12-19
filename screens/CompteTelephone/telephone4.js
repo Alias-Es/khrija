@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons'; // Icônes
 import AgePickerModal from '../../components/AgePickerModal';
 import SexePickerModal from '../../components/SexePickerModal';
 import StatusPickerModal from '../../components/StatusPickerModal';
@@ -17,7 +18,7 @@ const Telephone5 = () => {
   const route = useRoute();
   const navigation = useNavigation();
 
-  const { nom, prenom } = route.params || {};
+  const { nom, prenom } = route.params || {}; // Suppression de userId des params
 
   const [userId, setUserId] = useState(null);
   const [age, setAge] = useState(null);
@@ -116,19 +117,23 @@ const Telephone5 = () => {
     <View style={styles.container}>
       <Text style={styles.title}>KHRIJA</Text>
       <Text style={styles.subtitle}>
-        Bonjour {prenom || 'Utilisateur'}, finalisez votre profil :
+        Bonjour <Text style={styles.firstName}>{prenom || 'Utilisateur'}</Text>, finalisez votre profil :
       </Text>
 
+      {/* Sélection de l'âge */}
       <TouchableOpacity
-        style={[styles.selectButton, age && styles.selectedShadow]}
+        style={styles.selectButton}
         onPress={() => {
           setTempAge(age);
           setAgeModalVisible(true);
         }}
       >
-        <Text style={styles.selectButtonText}>
-          {age ? `Âge : ${age} ans` : 'Sélectionnez votre âge'}
-        </Text>
+        <View style={styles.buttonContent}>
+          <Text style={styles.selectButtonText}>
+            {age ? `Âge : ${age} ans` : 'Sélectionnez votre âge'}
+          </Text>
+          {age && <Ionicons name="checkmark-circle" size={24} color="green" />}
+        </View>
       </TouchableOpacity>
       <AgePickerModal
         visible={ageModalVisible}
@@ -141,16 +146,20 @@ const Telephone5 = () => {
         }}
       />
 
+      {/* Sélection du sexe */}
       <TouchableOpacity
-        style={[styles.selectButton, sexe && styles.selectedShadow]}
+        style={styles.selectButton}
         onPress={() => {
           setTempSexe(sexe);
           setSexeModalVisible(true);
         }}
       >
-        <Text style={styles.selectButtonText}>
-          {sexe ? `Sexe : ${sexe}` : 'Sélectionnez votre sexe'}
-        </Text>
+        <View style={styles.buttonContent}>
+          <Text style={styles.selectButtonText}>
+            {sexe ? `Sexe : ${sexe}` : 'Sélectionnez votre sexe'}
+          </Text>
+          {sexe && <Ionicons name="checkmark-circle" size={24} color="green" />}
+        </View>
       </TouchableOpacity>
       <SexePickerModal
         visible={sexeModalVisible}
@@ -163,16 +172,20 @@ const Telephone5 = () => {
         }}
       />
 
+      {/* Sélection du statut */}
       <TouchableOpacity
-        style={[styles.selectButton, status && styles.selectedShadow]}
+        style={styles.selectButton}
         onPress={() => {
           setTempStatus(status);
           setStatusModalVisible(true);
         }}
       >
-        <Text style={styles.selectButtonText}>
-          {status ? `Statut : ${status}` : 'Sélectionnez votre statut'}
-        </Text>
+        <View style={styles.buttonContent}>
+          <Text style={styles.selectButtonText}>
+            {status ? `Statut : ${status}` : 'Sélectionnez votre statut'}
+          </Text>
+          {status && <Ionicons name="checkmark-circle" size={24} color="green" />}
+        </View>
       </TouchableOpacity>
       <StatusPickerModal
         visible={statusModalVisible}
@@ -185,6 +198,7 @@ const Telephone5 = () => {
         }}
       />
 
+      {/* Bouton de finalisation */}
       <TouchableOpacity
         style={[
           styles.finishButton,
@@ -206,58 +220,68 @@ const Telephone5 = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: '#F9F9F9',
     paddingHorizontal: 20,
+    paddingTop: 110,
     alignItems: 'center',
-    paddingTop: 150,
   },
   title: {
-    fontSize: 40,
+    fontFamily: 'ChauPhilomeneOne',
+    fontSize: 90,
     fontWeight: 'bold',
-    color: '#FF4081',
-    marginBottom: 20,
+    color: '#E91E63',
+    marginBottom: 100,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
+    color: '#555',
+    marginBottom: 30,
     textAlign: 'center',
   },
+  firstName: {
+    fontSize: 21,
+    fontWeight: 'bold',
+    color: '#E91E63',
+  },
   selectButton: {
-    width: '100%',
+    width: '90%',
     paddingVertical: 15,
     marginVertical: 10,
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#CCCCCC',
     backgroundColor: '#FFF',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  selectedShadow: {
-    shadowColor: '#4A90E2',
-    shadowOpacity: 0.7,
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 20,
   },
   selectButtonText: {
+    color: '#000000',
     fontSize: 16,
-    color: '#333',
     fontWeight: 'bold',
   },
   finishButton: {
-    marginTop: 40,
-    width: '100%',
+    marginTop: 100,
+    width: '90%',
     paddingVertical: 15,
     borderRadius: 25,
     backgroundColor: '#AAA',
     alignItems: 'center',
   },
   activeFinishButton: {
-    backgroundColor: '#FF4081',
+    backgroundColor: '#4A90E2',
   },
   finishButtonText: {
-    color: '#FFF',
-    fontWeight: 'bold',
+    color: '#FFFFFF',
     fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 

@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { firebase } from '../FirebaseConfig';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -139,13 +140,29 @@ const DetailleOffres = () => {
           <View style={styles.buttonContainer}>
             {!userData?.isRegistered ? (
               <OfferButton
-                text="Ma3ndekch abonnement"
+                text={
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Image
+                      source={require('../assets/images/cadenas1.png')}
+                      style={{ width: 23, height: 23, marginRight: 9, marginBottom: 4 }}
+                    />
+                    <Text style={styles.cardText}>Offre réservée aux abonnés</Text>
+                  </View>
+                }
                 buttonType={1}
                 isDisabled={true}
               />
             ) : !userData?.abonnement_actif && !userOfferState?.etat ? (
               <OfferButton
-                text="Ma3ndekch abonnement"
+                text={
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Image
+                      source={require('../assets/images/cadenas.png')}
+                      style={{ width: 20, height: 20, marginRight: 5 }}
+                    />
+                    <Text style={styles.cardText}>Offre réservée aux abonnés</Text>
+                  </View>
+                }
                 buttonType={1}
                 isDisabled={true}
               />
@@ -255,6 +272,12 @@ const styles = StyleSheet.create({
     left: '50%',
     transform: [{ translateX: -75 }],
   },
+  cardText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  
 });
 
 export default DetailleOffres;

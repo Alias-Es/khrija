@@ -67,9 +67,6 @@ const Compte = () => {
     }, [])
   );
 
-  // Écouteur temps réel sur isRegistered (si souhaité)
-  // Note: Si vous avez besoin d'un écouteur en temps réel, gardez ce useEffect,
-  // sinon, si vous voulez juste vérifier à chaque navigation, vous pouvez commenter cet écouteur.
   useEffect(() => {
     let unsubscribe;
     if (user) {
@@ -94,12 +91,10 @@ const Compte = () => {
     };
   }, [user]);
 
-  // Écoute les changements de isRegistered
   useEffect(() => {
     if (isRegistered === false) {
       console.log('L’utilisateur n’est pas inscrit.');
-      Alert.alert('Inscription requise', 'Veuillez vous inscrire pour accéder à cette fonctionnalité.');
-    }
+       }
   }, [isRegistered]);
 
   const handleLogout = async () => {
@@ -136,6 +131,7 @@ const Compte = () => {
                 period="an"
                 info1="Valable 12 mois."
                 info2="Pas de renouvellement automatique à la fin de l'abonnement."
+           
                 selected={selectedSubscription === 'ANNUEL'}
                 onSelect={() => handleSubscriptionSelect('ANNUEL')}
               />
@@ -145,6 +141,7 @@ const Compte = () => {
                 period="mois"
                 info1="Sans engagement."
                 info2="Renouvellement automatique chaque mois."
+               
                 selected={selectedSubscription === 'MENSUEL'}
                 onSelect={() => handleSubscriptionSelect('MENSUEL')}
               />
@@ -176,7 +173,7 @@ const Compte = () => {
 const styles = {
   safeContainer: { flex: 1, backgroundColor: '#F8F8F8' },
   container: { flex: 1, backgroundColor: '#F8F8F8' },
-  subscriptionContainer: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 20 },
+  subscriptionContainer: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 10 },
   profileContainer: { marginHorizontal: 20 },
 };
 
