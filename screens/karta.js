@@ -1,52 +1,50 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator, TouchableOpacity, Animated } from 'react-native';
 import { firebase } from '../FirebaseConfig';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const Karta = () => {
-  const [userInfo, setUserInfo] = useState(null);
-  const [isRegistered, setIsRegistered] = useState(undefined); // Ajout de la condition d'inscription
+  const [userInfo, setUserInfo] = useState(undefined);
   const [loading, setLoading] = useState(true);
-  const opacity = new Animated.Value(0); // Opacité pour l'animation de fade-in
+  const opacity = new Animated.Value(0);
   const navigation = useNavigation();
 
   const fetchUserInfo = async () => {
+    setLoading(true);
     const user = firebase.auth().currentUser;
     if (user) {
       try {
         const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
         if (userDoc.exists) {
-          const data = userDoc.data();
-          setUserInfo(data);
-          setIsRegistered(data.isRegistered || false); // Ajout de isRegistered
+          setUserInfo(userDoc.data());
         } else {
-          console.log("Document de l'utilisateur non trouvé !");
-          setIsRegistered(false);
+          // Utilisateur connecté mais aucune donnée trouvée
+          setUserInfo(null);
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des informations de l'utilisateur:", error);
-        setIsRegistered(false);
+        setUserInfo(null);
       }
     } else {
-      setIsRegistered(false);
+      // Pas d'utilisateur connecté
+      setUserInfo(null);
     }
     setLoading(false);
   };
 
-  useFocusEffect(
-    React.useCallback(() => {
-      setLoading(true); // Réinitialise l'état de chargement
-      fetchUserInfo();
+  useEffect(() => {
+    // Chargement initial
+    fetchUserInfo();
+  }, []);
 
-      // Nettoyage si nécessaire
-      return () => {
-        console.log('Écran Karta a perdu le focus.');
-      };
+  useFocusEffect(
+    useCallback(() => {
+      // Rafraîchir les informations à chaque fois que l'écran est focus
+      fetchUserInfo();
     }, [])
   );
 
-  // Démarre l'animation de fade-in quand les données sont chargées
-  React.useEffect(() => {
+  useEffect(() => {
     if (!loading) {
       Animated.timing(opacity, {
         toValue: 1,
@@ -64,22 +62,12 @@ const Karta = () => {
     );
   }
 
-  // Redirection si l'utilisateur n'est pas connecté ou n'est pas enregistré
-  if (!firebase.auth().currentUser || !isRegistered) {
-    console.log("Utilisateur non connecté ou non enregistré. Redirection...");
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>
-          Vous devez être connecté et enregistré pour accéder à cette page.
-        </Text>
-        <TouchableOpacity
-          style={styles.subscribeButton}
-          onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.subscribeButtonText}>Se connecter</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  // userInfo === null => pas d'info utilisateur, on affiche la carte par défaut + overlay
+  const hasActiveSubscription = userInfo?.abonnement_actif ?? false;
+  const nom = userInfo?.nom || 'Nom de famille';
+  const prenom = userInfo?.prenom || 'Prénom';
+  const dateNaissance = userInfo?.dateNaissance ? `${userInfo.dateNaissance} ans` : 'Âge inconnu';
+  const email = userInfo?.email || 'exemple@email.com';
 
   return (
     <View style={styles.container}>
@@ -94,18 +82,16 @@ const Karta = () => {
           style={styles.profileImage}
         />
         <View style={styles.info}>
-          <Text style={styles.name}>{userInfo?.nom || 'Nom de famille'}</Text>
-          <Text style={styles.firstName}>{userInfo?.prenom || 'Prénom'}</Text>
-          <Text style={styles.details}>
-            {userInfo?.dateNaissance ? `${userInfo.dateNaissance} ans` : 'Âge inconnu'}
-          </Text>
-          <Text style={styles.email}>{userInfo?.email || 'exemple@email.com'}</Text>
+          <Text style={styles.name}>{nom}</Text>
+          <Text style={styles.firstName}>{prenom}</Text>
+          <Text style={styles.details}>{dateNaissance}</Text>
+          <Text style={styles.email}>{email}</Text>
           <Text style={styles.details}>Expire le 2024-10-26</Text>
         </View>
 
-        {!userInfo?.abonnement_actif && (
+        {!hasActiveSubscription && (
           <View style={styles.overlay}>
-            <TouchableOpacity style={styles.subscribeButton} onPress={() => navigation.navigate('nt9eyd')}>
+            <TouchableOpacity style={styles.subscribeButton} onPress={() => navigation.navigate('mdpOublier')}>
               <Text style={styles.subscribeButtonText}>M'ABONNER</Text>
             </TouchableOpacity>
           </View>
@@ -192,7 +178,7 @@ const styles = StyleSheet.create({
   },
   email: {
     fontSize: 16,
-    color: '#FFFFFF', // Highlight color for email
+    color: '#FFFFFF',
     fontWeight: '500',
     marginTop: 5,
   },
@@ -218,12 +204,6 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#E91E63',
-    marginBottom: 20,
-    textAlign: 'center',
   },
 });
 
