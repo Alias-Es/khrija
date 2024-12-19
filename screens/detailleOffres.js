@@ -158,7 +158,7 @@ const DetailleOffres = () => {
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Image
                       source={require('../assets/images/cadenas.png')}
-                      style={{ width: 20, height: 20, marginRight: 5 }}
+                      style={{ width: 23, height: 23, marginRight: 9, marginBottom: 4 }}
                     />
                     <Text style={styles.cardText}>Offre réservée aux abonnés</Text>
                   </View>
@@ -189,7 +189,19 @@ const DetailleOffres = () => {
 
           <OfferButton
             onPress={() => userData?.abonnement_actif && setUserCardVisible(true)}
-            text="Ma Carte"
+            text={
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {!userData?.abonnement_actif && (
+                  <Image
+                    source={require('../assets/images/cadenas1.png')}
+                    style={{ width: 23, height: 23, marginRight: 9, marginBottom: 4 ,position: 'absolute',
+                      left: -75, // Décale l'icône vers la gauche
+                    }}
+                  />
+                )}
+                <Text style={styles.cardText}>Ma Carte</Text>
+              </View>
+            }
             buttonType={2}
             isDisabled={!userData?.abonnement_actif}
           />
@@ -277,7 +289,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
-  
 });
 
 export default DetailleOffres;

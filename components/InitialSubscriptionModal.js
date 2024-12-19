@@ -1,7 +1,7 @@
 // components/InitialSubscriptionModal.js
 
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 
 const InitialSubscriptionModal = ({ visible, onClose, onSubscribe }) => (
@@ -11,13 +11,13 @@ const InitialSubscriptionModal = ({ visible, onClose, onSubscribe }) => (
     animationType="fade"
     onRequestClose={onClose}
   >
-    <View style={styles.modalBackground}>
+    <Pressable style={styles.modalBackground} onPress={onClose}>
       <View style={styles.modalContainer}>
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
           <FontAwesome name="times" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.modalTitle}>Bghiti tstafd men les réductions ?</Text>
-        <Text style={styles.modalMessage}>Tabonna daba u dir khrijat</Text>
+        <Text style={styles.modalTitle}>Envie de profiter de réductions exclusives ?</Text>
+        <Text style={styles.modalMessage}>Abonnez-vous maintenant et débloquez vos avantages !</Text>
         <TouchableOpacity
           style={styles.modalSubscribeButton}
           onPress={onSubscribe}
@@ -25,7 +25,7 @@ const InitialSubscriptionModal = ({ visible, onClose, onSubscribe }) => (
           <Text style={styles.subscribeButtonText}>M'ABONNER</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </Pressable>
   </Modal>
 );
 
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    width: '80%',
+    width: '90%',
     backgroundColor: '#FFF',
     borderRadius: 10,
     padding: 20,
@@ -46,8 +46,8 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 5, // Increased to give more space
+    right: 7, // Increased to give more space
   },
   modalTitle: {
     fontSize: 18,

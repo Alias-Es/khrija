@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from 'react-native';
 import { firebase } from '../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 
@@ -9,34 +21,23 @@ const PromoCodeScreen = () => {
   const navigation = useNavigation();
 
   const handlePromoCode = async () => {
-    console.log("Code promo soumis :", promoCode);
+    console.log('Code promo soumis :', promoCode);
     setLoading(true);
 
     try {
-      // Étape 1 : Accéder à l'utilisateur actuel
       const user = firebase.auth().currentUser;
       if (!user) {
-        console.error("Aucun utilisateur connecté !");
-        Alert.alert("Erreur", "Vous devez être connecté pour utiliser un code promo.");
+        Alert.alert('Erreur', 'Vous devez être connecté pour utiliser un code promo.');
         setLoading(false);
         return;
       }
-      const userId = user.uid;
-      console.log("Utilisateur connecté :", userId);
 
-      // Étape 2 : Récupérer toutes les offres
-      console.log("Recherche dans la collection 'offres'...");
       const offresSnapshot = await firebase.firestore().collection('offres').get();
-
       let codeFound = false;
       let foundOfferId = null;
-      let foundOfferDetails = null;
       let promoDocId = null;
 
-      // Étape 3 : Parcourir les documents `offres` et chercher le code promo
       for (const offreDoc of offresSnapshot.docs) {
-        console.log("Vérification du document :", offreDoc.id);
-
         const codePromoCollection = await firebase
           .firestore()
           .collection(`offres/${offreDoc.id}/codePromo`)
@@ -44,15 +45,10 @@ const PromoCodeScreen = () => {
 
         for (const promoDoc of codePromoCollection.docs) {
           const promoData = promoDoc.data();
-
-          // Vérifier si le code promo correspond à une valeur quelconque
-          const promoValues = Object.values(promoData);
-          if (promoValues.includes(promoCode)) {
-            console.log("Code promo trouvé dans le document :", offreDoc.id);
+          if (Object.values(promoData).includes(promoCode)) {
             codeFound = true;
             foundOfferId = offreDoc.id;
-            foundOfferDetails = offreDoc.data(); // Récupérer les détails de l'offre
-            promoDocId = promoDoc.id; // ID du document code promo
+            promoDocId = promoDoc.id;
             break;
           }
         }
@@ -60,58 +56,60 @@ const PromoCodeScreen = () => {
         if (codeFound) break;
       }
 
-      // Étape 4 : Si le code promo est introuvable
       if (!codeFound) {
-        console.log("Code promo introuvable !");
-        Alert.alert("Erreur", "Code promo invalide ou expiré.");
+        Alert.alert('Erreur', 'Code promo invalide ou expiré.');
         setLoading(false);
         return;
       }
 
-      // Étape 5 : Mise à jour dans `users`
-      console.log("Mise à jour de 'etat' pour l'utilisateur :", userId);
-      const userOfferStateRef = firebase
-        .firestore()
-        .doc(`users/${userId}/offres_etats/${foundOfferId}`);
-
+      const userOfferStateRef = firebase.firestore().doc(`users/${user.uid}/offres_etats/${foundOfferId}`);
       await userOfferStateRef.set({ etat: true }, { merge: true });
 
-      console.log("Mise à jour réussie : `etat` mis à true pour l'offre :", foundOfferId);
-
-      // Étape 6 : Suppression du code promo
-      console.log("Suppression du code promo :", promoDocId);
-      const promoCodeRef = firebase
-        .firestore()
-        .doc(`offres/${foundOfferId}/codePromo/${promoDocId}`);
+      const promoCodeRef = firebase.firestore().doc(`offres/${foundOfferId}/codePromo/${promoDocId}`);
       await promoCodeRef.delete();
 
-      console.log("Code promo supprimé avec succès :", promoDocId);
-
-      // Étape 7 : Redirection vers `DetailleOffres.js` avec l'ID de l'offre
-      console.log("Navigation vers DetailleOffres avec l'ID :", foundOfferId);
       navigation.navigate('detailleOffres', { id: foundOfferId });
-
     } catch (error) {
-      console.error("Erreur lors de la vérification ou de la mise à jour :", error);
-      Alert.alert("Erreur", "Une erreur s'est produite lors du traitement.");
+      console.error('Erreur :', error);
+      Alert.alert('Erreur', 'Une erreur s\'est produite.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Entrez votre code promo</Text>
-      <TextInput
-        style={styles.input}
-        value={promoCode}
-        onChangeText={setPromoCode}
-        placeholder="Code promo"
-        autoCapitalize="none"
-      />
-      <Button title={loading ? "Chargement..." : "Valider le code"} onPress={handlePromoCode} disabled={loading} />
-      {loading && <ActivityIndicator size="large" color="#E91E63" />}
-    </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <Text style={styles.title}>Entrez votre code promo</Text>
+        <Text style={styles.subtitle}>
+          Utilisez un code promo pour débloquer une offre spéciale.
+        </Text>
+        <TextInput
+          style={styles.input}
+          value={promoCode}
+          onChangeText={setPromoCode}
+          placeholder="Code promo"
+          placeholderTextColor="#aaa"
+          autoCapitalize="none"
+        />
+        <View style={styles.submitButtonContainer}>
+          <TouchableOpacity
+            style={[styles.submitButton, !promoCode.trim() && styles.disabledButton]}
+            onPress={handlePromoCode}
+            disabled={!promoCode.trim() || loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.submitButtonText}>Valider le code</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -120,20 +118,63 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    backgroundColor: '#f9f9f9',
+    padding: 20,
   },
   title: {
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 16,
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 30,
+    textAlign: 'center',
+    paddingHorizontal: 10,
   },
   input: {
+    width: '90%',
+    height: 50,
+    borderColor: '#ddd',
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 8,
-    marginBottom: 16,
-    width: '80%',
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  submitButtonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingLeft: 20,
+  },
+  submitButton: {
+    backgroundColor: '#FF4081',
+    paddingVertical: 15,
+    borderRadius: 30,
+    alignItems: 'center',
+    width: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

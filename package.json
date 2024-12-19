@@ -46,7 +46,8 @@
     "react-native-webview": "13.12.2",
     "rn-swipe-button": "^2.0.0",
     "stripe": "^17.3.0",
-    "undefined": "expo-auth-session/providers/google"
+    "undefined": "expo-auth-session/providers/google",
+    "@expo/vector-icons": "^14.0.2"
   },
   "private": true
 }

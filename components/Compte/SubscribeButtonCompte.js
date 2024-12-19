@@ -24,6 +24,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: 20,
     marginHorizontal: 40,
+    shadowOffset: { width: 0, height: 5 }, // Décalage de l'ombre
+    shadowOpacity: 0.4, // Opacité de l'ombre
+    shadowRadius: 4, // Rayon de l'ombre (flou)
+    elevation: 5, // Pour Android (équivalent)
+  
   },
   disabledButton: {
     backgroundColor: '#CCCCCC',

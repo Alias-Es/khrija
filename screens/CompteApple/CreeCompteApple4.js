@@ -1,14 +1,14 @@
-import React, { useState, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Alert, 
-  ActivityIndicator 
+import React, { useState, useCallback, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons'; // Importer les icônes si nécessaire
+import { Ionicons } from '@expo/vector-icons'; // Icônes
 import AgePickerModal from '../../components/AgePickerModal';
 import SexePickerModal from '../../components/SexePickerModal';
 import StatusPickerModal from '../../components/StatusPickerModal';
@@ -18,8 +18,9 @@ const CreeCompteApple4 = () => {
   const route = useRoute();
   const navigation = useNavigation();
 
-  const { userId, nom, prenom } = route.params || {};
+  const { nom, prenom } = route.params || {};
 
+  const [userId, setUserId] = useState(null);
   const [age, setAge] = useState(null);
   const [tempAge, setTempAge] = useState(null);
   const [sexe, setSexe] = useState(null);
@@ -29,14 +30,87 @@ const CreeCompteApple4 = () => {
 
   const [ageModalVisible, setAgeModalVisible] = useState(false);
   const [sexeModalVisible, setSexeModalVisible] = useState(false);
-  const [statusModalVisible, setStatusModalVisible] =useState(false);
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
 
+  // Récupérer l'utilisateur connecté
+  useEffect(() => {
+    const currentUser = firebase.auth().currentUser;
+    if (currentUser) {
+      setUserId(currentUser.uid);
+    } else {
+      Alert.alert('Erreur', 'Utilisateur non authentifié. Veuillez vous reconnecter.');
+      navigation.navigate('telephone1'); // Redirige vers une page de connexion
+    }
+  }, [navigation]);
+
   const isFormValid = age && sexe && status;
 
+  const validateUserData = useCallback(() => {
+    const errors = [];
+    if (!userId) errors.push('Identifiant utilisateur manquant');
+    if (!age) errors.push('Âge non sélectionné');
+    if (!sexe) errors.push('Sexe non sélectionné');
+    if (!status) errors.push('Statut non sélectionné');
+    return errors;
+  }, [userId, age, sexe, status]);
+
   const handleFinish = async () => {
-    // Validation et logique d'inscription (inchangée)
+    const validationErrors = validateUserData();
+    if (validationErrors.length > 0) {
+      Alert.alert('Formulaire incomplet', validationErrors.join('\n'));
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const userRef = firebase.firestore().collection('users').doc(userId);
+
+      const userData = {
+        uid: userId,
+        nom: nom || '',
+        prenom: prenom || '',
+        age,
+        sexe,
+        statut: status,
+        abonnement_actif: false,
+        periode: null,
+        isRegistered: true,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+
+      const existingUser = await userRef.get();
+
+      if (existingUser.exists) {
+        await userRef.update(userData);
+      } else {
+        userData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        await userRef.set(userData);
+      }
+
+      const offresSnapshot = await firebase.firestore().collection('offres').get();
+      const batch = firebase.firestore().batch();
+
+      offresSnapshot.forEach((offreDoc) => {
+        const offreEtatRef = userRef.collection('offres_etats').doc(offreDoc.id);
+        batch.set(offreEtatRef, {
+          etat: false,
+          offreId: offreDoc.id,
+        });
+      });
+
+      await batch.commit();
+
+      Alert.alert('Inscription réussie', 'Votre profil a été mis à jour.', [
+        { text: 'OK', onPress: () => navigation.navigate('MainTabs', { screen: 'offres' }) },
+      ]);
+    } catch (error) {
+      Alert.alert('Erreur', `Une erreur est survenue : ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -165,10 +239,10 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: 'center',
   },
-   firstName: {
+  firstName: {
     fontSize: 21,
     fontWeight: 'bold',
-    color: '#E91E63', // Utilisation de la couleur principale de l'application
+    color: '#E91E63',
   },
   selectButton: {
     width: '90%',
