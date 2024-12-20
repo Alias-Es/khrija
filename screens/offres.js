@@ -9,11 +9,16 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  Platform,
+  StatusBar,
+  Dimensions,
 } from 'react-native';
 import { firebase } from '../FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
 import OfferCard from '../components/offres/OfferCard';
 import CategoriesList from '../components/offres/CategoriesList';
@@ -21,7 +26,10 @@ import SearchBar from '../components/offres/SearchBar';
 import LanguagePickerModal from '../components/LanguagePickerModal';
 import { LanguageContext } from '../LanguageContext';
 
+const SCROLL_RANGE = 100;
+
 export default function ListeOffres() {
+  const insets = useSafeAreaInsets();
   const [fontsLoaded] = useFonts({
     'ChauPhilomeneOne': require('../assets/fonts/ChauPhilomeneOne.ttf'),
   });
@@ -37,7 +45,6 @@ export default function ListeOffres() {
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   const { language, setLanguage, translations } = useContext(LanguageContext);
-
   const navigation = useNavigation();
   const scrollY = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef(null);
@@ -115,21 +122,50 @@ export default function ListeOffres() {
     );
   }
 
+  const { height, width } = Dimensions.get('window');
+  const iconPosition = height * 0.02 + insets.top;
+  const searchBarInitialPos = height * 0.01;
+
+  const iosOffset = Platform.OS === 'ios' ? height * 0.05 : 0; // Ajusté pour être proportionnel
+  const androidExtraDown = Platform.OS === 'android' ? height * 0.03 : 0; // Ajusté pour être proportionnel
+
+  const distance = (searchBarInitialPos - iconPosition) + iosOffset;
+
+  // Limites pour l'icône de langue
+  const LANGUAGE_ICON_TOP = height * 0.08 + insets.top; // Ajusté pour être proportionnel
+  const LANGUAGE_ICON_HEIGHT = height * 0.08; // Ajusté pour être proportionnel
+  const LANGUAGE_ICON_BOTTOM = LANGUAGE_ICON_TOP + LANGUAGE_ICON_HEIGHT;
+
+  // Limite de translation pour la barre de catégories
+  const MAX_TRANSLATE_Y = -(LANGUAGE_ICON_BOTTOM - (searchBarInitialPos + height * 0.10)); // Ajusté pour être proportionnel
+
+  // Ajustement conditionnel basé sur la hauteur de l'écran
+  let adjustedTranslateY = Math.max(-(distance - androidExtraDown), MAX_TRANSLATE_Y);
+  if (height < 800) { // Exemple de seuil, ajustez selon vos besoins
+    adjustedTranslateY *= 0.9; // Ajustement proportionnel
+  }
+
   const logoOpacity = scrollY.interpolate({
-    inputRange: [0, 100],
+    inputRange: [0, SCROLL_RANGE],
     outputRange: [1, 0],
     extrapolate: 'clamp',
   });
 
   const searchBarScale = scrollY.interpolate({
-    inputRange: [0, 50],
+    inputRange: [0, height * 0.05], // Ajusté pour être proportionnel
     outputRange: [1, 0.9],
     extrapolate: 'clamp',
   });
 
   const searchBarTranslateX = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, -20],
+    inputRange: [0, SCROLL_RANGE],
+    outputRange: [0, -width * 0.05], // Utilisation de la largeur pour translateX
+    extrapolate: 'clamp',
+  });
+
+  const searchBarTranslateY = scrollY.interpolate({
+    inputRange: [0, SCROLL_RANGE],
+    outputRange: [0, adjustedTranslateY],
     extrapolate: 'clamp',
   });
 
@@ -143,39 +179,58 @@ export default function ListeOffres() {
 
   const renderStickyHeader = () => (
     <View style={styles.stickyHeader}>
-      <View style={styles.topRowContainer}>
-        <Animated.View
-          style={[
-            styles.searchBarContainer,
-            {
-              transform: [
-                { scaleX: searchBarScale },
-                { translateX: searchBarTranslateX },
-              ],
-            },
-          ]}
-        >
-          <SearchBar
-            searchText={searchText}
-            setSearchText={setSearchText}
-            placeholder={t('searchPlaceholder')}
+      {/* Conteneur pour la barre de recherche avec rétrécissement horizontal */}
+      <Animated.View
+        style={[
+          styles.headerSearchContainer,
+          {
+            marginTop: searchBarInitialPos,
+            transform: [
+              { scaleX: searchBarScale },
+              { translateX: searchBarTranslateX },
+              { translateY: searchBarTranslateY },
+            ],
+          },
+        ]}
+      >
+        <View style={styles.topRowContainer}>
+          <View style={styles.searchBarContainer}>
+            <SearchBar
+              searchText={searchText}
+              setSearchText={setSearchText}
+              placeholder={t('searchPlaceholder')}
+            />
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Conteneur pour les catégories qui suit verticalement mais sans scaleX */}
+      <Animated.View
+        style={[
+          styles.categoriesOuterContainer,
+          {
+            marginTop: searchBarInitialPos,
+            transform: [
+              { translateY: searchBarTranslateY },
+            ],
+          },
+        ]}
+      >
+        <View style={styles.categoriesContainer}>
+          <CategoriesList
+            categories={categories}
+            selectedCategories={selectedCategories}
+            toggleCategory={(category) =>
+              setSelectedCategories((prev) =>
+                prev.includes(category)
+                  ? prev.filter((cat) => cat !== category)
+                  : [...prev, category]
+              )
+            }
+            loading={loadingCategories}
           />
-        </Animated.View>
-      </View>
-      <View style={styles.categoriesContainer}>
-        <CategoriesList
-          categories={categories}
-          selectedCategories={selectedCategories}
-          toggleCategory={(category) =>
-            setSelectedCategories((prev) =>
-              prev.includes(category)
-                ? prev.filter((cat) => cat !== category)
-                : [...prev, category]
-            )
-          }
-          loading={loadingCategories}
-        />
-      </View>
+        </View>
+      </Animated.View>
     </View>
   );
 
@@ -187,7 +242,7 @@ export default function ListeOffres() {
         onPress={() => setShowLanguageModal(true)}
         style={styles.languageIconContainerFixed}
       >
-        <Ionicons name="globe-outline" size={26} color="#000" />
+        <Ionicons name="globe-outline" size={wp('6%')} color="#000" />
         <Text style={styles.languageInitials}>{language.toUpperCase()}</Text>
       </TouchableOpacity>
 
@@ -231,56 +286,66 @@ const styles = StyleSheet.create({
   logoHeaderWrapper: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 20,
+    paddingTop:
+      Platform.OS === 'android'
+        ? StatusBar.currentHeight + hp('3%')
+        : hp('0.2%'),
   },
   appTitle: {
     fontFamily: 'ChauPhilomeneOne',
-    fontSize: 60,
+    fontSize: wp('15%'),
     fontWeight: 'bold',
     color: '#FF4081',
     textAlign: 'center',
   },
   languageIconContainerFixed: {
     position: 'absolute',
-    right: 13,
-    top: 65,
-    zIndex: 10,
+    right: wp('5%'),
+    top: hp('8%'),
+    zIndex: 10, // Assurez-vous que l'icône est au-dessus
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 15,
-    padding: 2,
+    borderRadius: wp('3%'),
+    padding: 5,
   },
   languageInitials: {
-    fontSize: 12,
+    fontSize: wp('3%'),
     fontWeight: 'bold',
     color: '#000',
     marginTop: 2,
   },
   stickyHeader: {
     backgroundColor: '#F8F8F8',
-    paddingBottom: 5,
+  },
+  headerSearchContainer: {
+    backgroundColor: '#F8F8F8',
+    minHeight: hp('10%'),
+    marginBottom: -hp('4.5%'),
   },
   topRowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    paddingHorizontal: wp('3%'),
   },
   searchBarContainer: {
     alignSelf: 'center',
-    height: 60,
-    width: '110%',
+    height: hp('8%'),
+    width: wp('95%'),
     overflow: 'hidden',
+  },
+  categoriesOuterContainer: {
+    backgroundColor: '#F8F8F8',
+    minHeight: hp('7%'),
   },
   categoriesContainer: {
     width: '100%',
-    paddingHorizontal: 10,
+    paddingHorizontal: wp('0.2%'),
     backgroundColor: '#F8F8F8',
-    paddingBottom: 5,
+    paddingBottom: hp('1%'),
   },
   listContent: {
-    paddingBottom: 5,
+    paddingBottom: hp('3%'),
   },
   loadingContainer: {
     flex: 1,
@@ -289,8 +354,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
+    marginTop: hp('2%'),
+    fontSize: wp('4%'),
     color: '#888',
   },
 });

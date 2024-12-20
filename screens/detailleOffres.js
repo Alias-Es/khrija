@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Animated,
 } from 'react-native';
 import { firebase } from '../FirebaseConfig';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -40,6 +41,33 @@ const DetailleOffres = () => {
   const [offerDialogVisible, setOfferDialogVisible] = useState(false);
   const [userCardVisible, setUserCardVisible] = useState(false);
   const [showSwipeButton, setShowSwipeButton] = useState(false);
+
+  // Animation pour le bouton "M'abonner"
+  const shakeAnimation = useRef(new Animated.Value(0)).current;
+  const shakeSubscriptionButton = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnimation, {
+        toValue: 10,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: -10,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 10,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 0,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const handleSubscribe = () => {
     setInitialModalVisible(false);
@@ -151,6 +179,12 @@ const DetailleOffres = () => {
                 }
                 buttonType={1}
                 isDisabled={true}
+                onPress={() => {
+                  // Bouton gris
+                  if (!userData?.abonnement_actif) {
+                    shakeSubscriptionButton();
+                  }
+                }}
               />
             ) : !userData?.abonnement_actif && !userOfferState?.etat ? (
               <OfferButton
@@ -165,9 +199,25 @@ const DetailleOffres = () => {
                 }
                 buttonType={1}
                 isDisabled={true}
+                onPress={() => {
+                  // Bouton gris
+                  if (!userData?.abonnement_actif) {
+                    shakeSubscriptionButton();
+                  }
+                }}
               />
             ) : !userOfferState?.etat ? (
-              <OfferButton text="Offre déjà utilisée" buttonType={1} isDisabled />
+              <OfferButton
+                text="Offre déjà utilisée"
+                buttonType={1}
+                isDisabled
+                onPress={() => {
+                  // Bouton gris
+                  if (!userData?.abonnement_actif) {
+                    shakeSubscriptionButton();
+                  }
+                }}
+              />
             ) : !showSwipeButton ? (
               <OfferButton
                 onPress={() => setOfferDialogVisible(true)}
@@ -188,14 +238,21 @@ const DetailleOffres = () => {
           />
 
           <OfferButton
-            onPress={() => userData?.abonnement_actif && setUserCardVisible(true)}
+            onPress={() => {
+              if (userData?.abonnement_actif) {
+                setUserCardVisible(true);
+              } else {
+                // Bouton gris
+                shakeSubscriptionButton();
+              }
+            }}
             text={
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 {!userData?.abonnement_actif && (
                   <Image
-                    source={require('../assets/images/cadenas1.png')}
-                    style={{ width: 23, height: 23, marginRight: 9, marginBottom: 4 ,position: 'absolute',
-                      left: -75, // Décale l'icône vers la gauche
+                    source={require('../assets/images/cadenas.png')}
+                    style={{ width: 23, height: 23, marginRight: 9, marginBottom: 4,position: 'absolute',
+                      left: -75,
                     }}
                   />
                 )}
@@ -209,9 +266,20 @@ const DetailleOffres = () => {
       </ScrollView>
 
       {!userData?.abonnement_actif && (
-        <View style={styles.animatedButtonContainer}>
+        <Animated.View
+          style={[
+            styles.animatedButtonContainer,
+            {
+              transform: [
+                {
+                  translateX: shakeAnimation,
+                },
+              ],
+            },
+          ]}
+        >
           <SubscriptionButton onPress={handleSubscribe} />
-        </View>
+        </Animated.View>
       )}
     </View>
   );

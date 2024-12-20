@@ -18,34 +18,41 @@ const Telephone3 = ({ navigation }) => {
   const [nom, setNom] = useState('');
   const buttonPositionAnimated = useRef(new Animated.Value(20)).current;
 
-  useEffect(() => {
-    const keyboardShowListener = Keyboard.addListener(
-      'keyboardWillShow',
-      (event) => {
-        Animated.timing(buttonPositionAnimated, {
-          toValue: event.endCoordinates.height - 34,
-          duration: 200,
-          useNativeDriver: false,
-        }).start();
-      }
-    );
+  // Définir l'offset du bouton au-dessus du clavier (en pixels)
+  const BUTTON_OFFSET = 20;
 
-    const keyboardHideListener = Keyboard.addListener(
-      'keyboardWillHide',
-      () => {
-        Animated.timing(buttonPositionAnimated, {
-          toValue: 20,
-          duration: 200,
-          useNativeDriver: false,
-        }).start();
-      }
-    );
+  useEffect(() => {
+    // Définir les événements en fonction de la plateforme
+    const keyboardShowEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const keyboardHideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const keyboardShowListener = Keyboard.addListener(keyboardShowEvent, (event) => {
+      const keyboardHeight = event.endCoordinates ? event.endCoordinates.height : 0;
+      console.log('Keyboard Height:', keyboardHeight); // Pour débogage
+
+      // Calculer la position finale du bouton : hauteur du clavier + offset
+      const toValue = keyboardHeight + BUTTON_OFFSET;
+
+      Animated.timing(buttonPositionAnimated, {
+        toValue: toValue,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    const keyboardHideListener = Keyboard.addListener(keyboardHideEvent, () => {
+      Animated.timing(buttonPositionAnimated, {
+        toValue: 20, // Position initiale du bouton
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    });
 
     return () => {
       keyboardShowListener.remove();
       keyboardHideListener.remove();
     };
-  }, []);
+  }, [buttonPositionAnimated]);
 
   const handleContinue = () => {
     if (!prenom.trim() || !nom.trim()) {
@@ -114,7 +121,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f9f9f9',
     padding: 20,
-    marginTop: -80,
+    // Attention avec le marginTop négatif, cela peut causer des problèmes sur certains appareils
+    // marginTop: -80,
   },
   title: {
     fontSize: 26,
@@ -150,7 +158,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: '100%',
     alignItems: 'center',
-    paddingLeft: 20,
+    // paddingLeft: 20, // Vous pouvez enlever ou ajuster si nécessaire
   },
   submitButton: {
     backgroundColor: '#FF4081',
@@ -158,7 +166,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center',
     width: '90%',
-    bottom: 60,
+    // bottom: 60, // Déjà géré par l'animation
   },
   disabledButton: {
     backgroundColor: '#ccc',
