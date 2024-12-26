@@ -1,14 +1,16 @@
-// components/offres/OfferCard.js
-import React from 'react';
+import React, { useContext } from 'react';
 import { TouchableOpacity, View, Text, Image, StyleSheet } from 'react-native';
+import { LanguageContext } from '../../LanguageContext';
 
 const OfferCard = ({ offre, onPress }) => {
+  const { language } = useContext(LanguageContext);
+
   return (
     <TouchableOpacity onPress={() => onPress(offre.id)} style={styles.card}>
       {/* Sticker Gratuit */}
       {offre.gratuit && (
         <View style={styles.sticker}>
-          <Text style={styles.stickerText}>Gratuit</Text>
+          <Text style={styles.stickerText}>{language === 'en' ? 'Free' : 'Gratuit'}</Text>
         </View>
       )}
 
@@ -21,8 +23,12 @@ const OfferCard = ({ offre, onPress }) => {
       </View>
       <View style={styles.content}>
         <Text style={styles.name}>{offre.nom}</Text>
-        <Text style={styles.offer} numberOfLines={1}>🎁 {offre.offreDecouverte}</Text>
-        <Text style={styles.permanentOffer}>♾️ {offre.offrePermanente}</Text>
+        <Text style={styles.offer} numberOfLines={1}>
+          🎁 {language === 'en' ? offre.offresDecouverteEN : offre.offreDecouverte}
+        </Text>
+        <Text style={styles.permanentOffer}>
+          ♾️ {language === 'en' ? offre.offrePermananteEN : offre.offrePermanente}
+        </Text>
       </View>
     </TouchableOpacity>
   );

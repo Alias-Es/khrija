@@ -1,33 +1,41 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { LanguageContext } from '../LanguageContext';
 
-const OfferValidationModal = ({ visible, onClose, onValidateOffer }) => (
-  <Modal
-    visible={visible}
-    transparent
-    animationType="slide"
-    onRequestClose={onClose}
-  >
-    <View style={styles.modalBackground}>
-      <View style={styles.modalContainer}>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <FontAwesome name="times" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.modalTitle}>Confirmation</Text>
-        <Text style={styles.modalMessage}>
-          Khask tvalidi l'offre 9dam un responsable f l'établissement
-        </Text>
-        <TouchableOpacity
-          style={styles.modalSubscribeButton}
-          onPress={onValidateOffer}
-        >
-          <Text style={styles.subscribeButtonText}>Valider l'offre</Text>
-        </TouchableOpacity>
+const OfferValidationModal = ({ visible, onClose, onValidateOffer }) => {
+  const { language, translations } = useContext(LanguageContext);
+  const t = (key) => translations[language][key];
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalBackground}>
+        <View style={styles.modalContainer}>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <FontAwesome name="times" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>{t('offerValidationTitle')}</Text>
+          <Text style={styles.modalMessage}>
+            {t('offerValidationMessage')}
+          </Text>
+          <TouchableOpacity
+            style={styles.modalSubscribeButton}
+            onPress={onValidateOffer}
+          >
+            <Text style={styles.subscribeButtonText}>
+              {t('validateOfferButton')}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 const styles = StyleSheet.create({
   modalBackground: {

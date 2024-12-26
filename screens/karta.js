@@ -1,13 +1,16 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator, TouchableOpacity, Animated } from 'react-native';
 import { firebase } from '../FirebaseConfig';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { LanguageContext } from '../LanguageContext';
 
 const Karta = () => {
   const [userInfo, setUserInfo] = useState(undefined);
   const [loading, setLoading] = useState(true);
-  const opacity = new Animated.Value(0);
+  const opacity = useState(new Animated.Value(0))[0];
   const navigation = useNavigation();
+  const { language, translations } = useContext(LanguageContext);
+  const t = (key) => translations[language][key];
 
   const fetchUserInfo = async () => {
     setLoading(true);
@@ -16,32 +19,35 @@ const Karta = () => {
       try {
         const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
         if (userDoc.exists) {
-          setUserInfo(userDoc.data());
+          const data = userDoc.data();
+          setUserInfo({
+            ...data,
+            nom: data[`nom${language === 'en' ? 'EN' : ''}`] || data.nom,
+            prenom: data[`prenom${language === 'en' ? 'EN' : ''}`] || data.prenom,
+            dateNaissance: data[`dateNaissance${language === 'en' ? 'EN' : ''}`] || data.dateNaissance,
+            email: data[`email${language === 'en' ? 'EN' : ''}`] || data.email,
+          });
         } else {
-          // Utilisateur connecté mais aucune donnée trouvée
           setUserInfo(null);
         }
       } catch (error) {
-        console.error("Erreur lors de la récupération des informations de l'utilisateur:", error);
+        console.error(t('fetchUserError'), error);
         setUserInfo(null);
       }
     } else {
-      // Pas d'utilisateur connecté
       setUserInfo(null);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    // Chargement initial
     fetchUserInfo();
-  }, []);
+  }, [language]);
 
   useFocusEffect(
     useCallback(() => {
-      // Rafraîchir les informations à chaque fois que l'écran est focus
       fetchUserInfo();
-    }, [])
+    }, [language])
   );
 
   useEffect(() => {
@@ -62,18 +68,20 @@ const Karta = () => {
     );
   }
 
-  // userInfo === null => pas d'info utilisateur, on affiche la carte par défaut + overlay
   const hasActiveSubscription = userInfo?.abonnement_actif ?? false;
-  const nom = userInfo?.nom || 'Nom de famille';
-  const prenom = userInfo?.prenom || 'Prénom';
-  const dateNaissance = userInfo?.dateNaissance ? `${userInfo.dateNaissance} ans` : 'Âge inconnu';
-  const email = userInfo?.email || 'exemple@email.com';
+  const nom = userInfo?.nom || t('defaultLastName');
+  const prenom = userInfo?.prenom || t('defaultFirstName');
+  const dateNaissance = userInfo?.dateNaissance ? `${userInfo.dateNaissance} ${t('years')}` : t('unknownAge');
+  const email = userInfo?.email || t('defaultEmail');
 
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
         <Text style={styles.logo}>KHRIJA</Text>
       </View>
+
+      {/* Ajout de la mention "Ma Carte Khrija" */}
+      <Text style={styles.cardTitle}>{t('myCardTitle')}</Text>
 
       <Animated.View style={[styles.card, { opacity }]}>
         <Text style={styles.watermark}>KHRIJA</Text>
@@ -86,17 +94,33 @@ const Karta = () => {
           <Text style={styles.firstName}>{prenom}</Text>
           <Text style={styles.details}>{dateNaissance}</Text>
           <Text style={styles.email}>{email}</Text>
-          <Text style={styles.details}>Expire le 2024-10-26</Text>
+          <Text style={styles.details}>{t('expiryDate')} 2024-10-26</Text>
         </View>
 
         {!hasActiveSubscription && (
           <View style={styles.overlay}>
-            <TouchableOpacity style={styles.subscribeButton} onPress={() => navigation.navigate('mdpOublier')}>
-              <Text style={styles.subscribeButtonText}>M'ABONNER</Text>
+            <Text style={styles.overlayText}>
+              🔒  {t('subscribePrompt')}
+            </Text>
+            <TouchableOpacity
+              style={styles.subscribeButton}
+              onPress={() => navigation.navigate('mdpOublier')}
+            >
+              <Text style={styles.subscribeButtonText}>{t('subscribeButtonText')}</Text>
             </TouchableOpacity>
           </View>
         )}
       </Animated.View>
+
+      {/* Bouton pour modifier les informations, visible si un utilisateur est connecté */}
+      {userInfo !== null && (
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => navigation.navigate('EditUserInfo')} // Navigue vers la page de modification
+        >
+          <Text style={styles.editButtonText}>{t('editInfoButtonText')}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -105,7 +129,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#ffffff',
     paddingVertical: 20,
     justifyContent: 'center',
   },
@@ -123,8 +147,14 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 90,
     fontFamily: 'ChauPhilomeneOne',
-    fontWeight: 'bold',
-    color: '#E91E63',
+    color: '#FF4081',
+  },
+  cardTitle: {
+    fontSize: 27,
+    color: '#4A90E2',
+    marginBottom: 25,
+    textAlign: 'center',
+    fontFamily: 'ChauPhilomeneOne',
   },
   card: {
     flexDirection: 'row',
@@ -193,17 +223,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 15,
   },
+  overlayText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 20,
+    lineHeight: 24,
+    fontFamily: 'ChauPhilomeneOne',
+  },
   subscribeButton: {
     backgroundColor: '#E91E63',
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 15,
+    paddingHorizontal: 90,
+    borderRadius: 25,
     alignItems: 'center',
   },
   subscribeButtonText: {
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  editButton: {
+    marginTop: 20,
+    backgroundColor: '#4A90E2',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 5,
+  },
+  editButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

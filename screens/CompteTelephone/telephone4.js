@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import AgePickerModal from '../../components/AgePickerModal';
 import SexePickerModal from '../../components/SexePickerModal';
 import StatusPickerModal from '../../components/StatusPickerModal';
 import { firebase } from '../../FirebaseConfig';
+import { LanguageContext } from '../../LanguageContext'; // Import du contexte de langue
 
 const Telephone5 = () => {
   const route = useRoute();
@@ -34,13 +35,16 @@ const Telephone5 = () => {
 
   const [isLoading, setIsLoading] = useState(false);
 
+  const { translations, language } = useContext(LanguageContext); // Utilisation du contexte de langue
+  const t = (key) => translations[language][key]; // Fonction de traduction
+
   // Récupérer l'utilisateur connecté
   useEffect(() => {
     const currentUser = firebase.auth().currentUser;
     if (currentUser) {
       setUserId(currentUser.uid);
     } else {
-      Alert.alert('Erreur', 'Utilisateur non authentifié. Veuillez vous reconnecter.');
+      Alert.alert(t('error'), t('notAuthenticated'));
       navigation.navigate('telephone1'); // Redirige vers une page de connexion
     }
   }, [navigation]);
@@ -49,17 +53,17 @@ const Telephone5 = () => {
 
   const validateUserData = useCallback(() => {
     const errors = [];
-    if (!userId) errors.push('Identifiant utilisateur manquant');
-    if (!age) errors.push('Âge non sélectionné');
-    if (!sexe) errors.push('Sexe non sélectionné');
-    if (!status) errors.push('Statut non sélectionné');
+    if (!userId) errors.push(t('missingUserId'));
+    if (!age) errors.push(t('missingAge'));
+    if (!sexe) errors.push(t('missingSex'));
+    if (!status) errors.push(t('missingStatus'));
     return errors;
   }, [userId, age, sexe, status]);
 
   const handleFinish = async () => {
     const validationErrors = validateUserData();
     if (validationErrors.length > 0) {
-      Alert.alert('Formulaire incomplet', validationErrors.join('\n'));
+      Alert.alert(t('incompleteForm'), validationErrors.join('\n'));
       return;
     }
 
@@ -103,11 +107,11 @@ const Telephone5 = () => {
 
       await batch.commit();
 
-      Alert.alert('Inscription réussie', 'Votre profil a été mis à jour.', [
+      Alert.alert(t('registrationSuccess'), t('profileUpdated'), [
         { text: 'OK', onPress: () => navigation.navigate('MainTabs', { screen: 'offres' }) },
       ]);
     } catch (error) {
-      Alert.alert('Erreur', `Une erreur est survenue : ${error.message}`);
+      Alert.alert(t('error'), `${t('errorOccurred')}: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -115,9 +119,9 @@ const Telephone5 = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>KHRIJA</Text>
+      <Text style={styles.title}>{t('appName')}</Text>
       <Text style={styles.subtitle}>
-        Bonjour <Text style={styles.firstName}>{prenom || 'Utilisateur'}</Text>, finalisez votre profil :
+        {t('hello')} <Text style={styles.firstName}>{prenom || t('user')}</Text>, {t('completeProfile')}
       </Text>
 
       {/* Sélection de l'âge */}
@@ -130,7 +134,7 @@ const Telephone5 = () => {
       >
         <View style={styles.buttonContent}>
           <Text style={styles.selectButtonText}>
-            {age ? `Âge : ${age} ans` : 'Sélectionnez votre âge'}
+            {age ? `${t('age')}: ${age} ${t('years')}` : t('selectAge')}
           </Text>
           {age && <Ionicons name="checkmark-circle" size={24} color="green" />}
         </View>
@@ -156,7 +160,7 @@ const Telephone5 = () => {
       >
         <View style={styles.buttonContent}>
           <Text style={styles.selectButtonText}>
-            {sexe ? `Sexe : ${sexe}` : 'Sélectionnez votre sexe'}
+            {sexe ? `${t('sex')}: ${sexe}` : t('selectSex')}
           </Text>
           {sexe && <Ionicons name="checkmark-circle" size={24} color="green" />}
         </View>
@@ -182,7 +186,7 @@ const Telephone5 = () => {
       >
         <View style={styles.buttonContent}>
           <Text style={styles.selectButtonText}>
-            {status ? `Statut : ${status}` : 'Sélectionnez votre statut'}
+            {status ? `${t('status')}: ${status}` : t('selectStatus')}
           </Text>
           {status && <Ionicons name="checkmark-circle" size={24} color="green" />}
         </View>
@@ -210,12 +214,14 @@ const Telephone5 = () => {
         {isLoading ? (
           <ActivityIndicator color="#FFFFFF" />
         ) : (
-          <Text style={styles.finishButtonText}>Créer mon profil</Text>
+          <Text style={styles.finishButtonText}>{t('createProfile')}</Text>
         )}
       </TouchableOpacity>
     </View>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -228,7 +234,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'ChauPhilomeneOne',
     fontSize: 90,
-    fontWeight: 'bold',
+    
     color: '#E91E63',
     marginBottom: 100,
   },

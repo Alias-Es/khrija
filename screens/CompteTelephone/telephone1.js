@@ -1,13 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useContext } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
 } from 'react-native';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useNavigation } from '@react-navigation/native';
@@ -16,11 +16,28 @@ import SubmitButton from '../../components/boutonSuivant'; // Import du bouton
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import { sendVerificationCode } from './smsService'; // Import de la fonction externe
+import { LanguageContext } from '../../LanguageContext'; // Import du contexte de langue
+import PhoneInput from 'react-native-phone-number-input'; // Import de la bibliothèque
 
 const PhoneNumberLogin = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [isValid, setIsValid] = useState(false); // État pour la validité
+  const phoneInputRef = useRef(null);
   const recaptchaVerifier = useRef(null);
   const navigation = useNavigation(); // Hook pour naviguer
+  const { translations, language } = useContext(LanguageContext); // Contexte de langue
+  const t = (key) => translations[language][key]; // Fonction pour récupérer les traductions
+
+  // Fonction pour valider et envoyer le numéro de téléphone
+  const handleSendCode = () => {
+    const checkValid = phoneInputRef.current?.isValidNumber(phoneNumber);
+    if (checkValid) {
+      const formattedNumber = phoneInputRef.current?.getNumberAfterPossiblyEliminatingZero().formattedNumber;
+      sendVerificationCode(formattedNumber, recaptchaVerifier, navigation);
+    } else {
+      Alert.alert(t('invalidPhoneNumber')); // Utilisation d'Alert pour un meilleur UX
+    }
+  };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -35,32 +52,54 @@ const PhoneNumberLogin = () => {
           androidHardwareAccelerationDisabled
         />
 
-        {/* Title Section */}
-        <Text style={styles.title}>On peut avoir{'\n'}ton numéro ?</Text>
+        {/* Section Titre */}
+        <Text style={styles.title}>{t('askForPhoneNumber')}</Text>
 
-        {/* Input Section */}
+        {/* Section Input avec PhoneInput */}
         <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Numéro de téléphone"
-            keyboardType="phone-pad"
-            onChangeText={setPhoneNumber}
-            value={phoneNumber}
+          <PhoneInput
+            ref={phoneInputRef}
+            defaultValue={phoneNumber}
+            defaultCode="MA" // Code par défaut
+            layout="first"
+            onChangeText={(text) => {
+              setPhoneNumber(text);
+            }}
+            onChangeFormattedText={(text) => {
+              setPhoneNumber(text);
+              const valid = phoneInputRef.current?.isValidNumber(text);
+              setIsValid(valid);
+            }}
+            countryPickerProps={{
+              countryCodes: ['MA', 'FR'], // Limiter aux pays MA et FR
+              withFilter: false,
+              withFlag: true,
+              withCountryNameButton: true,
+              withCallingCode: true,
+            }}
+            withShadow
+            autoFocus
+            containerStyle={styles.phoneContainer}
+            textContainerStyle={styles.textInput}
+            textInputProps={{
+              placeholderTextColor: '#999',
+            }}
+            flagButtonStyle={styles.flagButton}
+            codeTextStyle={styles.codeText}
+            textInputStyle={styles.phoneTextInput}
           />
         </View>
 
         {/* Description */}
         <Text style={styles.description}>
-          On va t'envoyer un code pour vérifier que c'est vraiment toi.{' '}
-          <Text style={styles.link}>
-            Que se passe-t-il si tu changes de numéro ?
-          </Text>
+          {t('verificationCodeMessage')}{' '}
+          <Text style={styles.link}>{t('phoneNumberChangeLink')}</Text>
         </Text>
 
-        {/* Submit Button */}
+        {/* Bouton Soumettre */}
         <SubmitButton
-          onPress={() => sendVerificationCode(phoneNumber, recaptchaVerifier, navigation)}
-          disabled={!phoneNumber}
+          onPress={handleSendCode}
+          disabled={!isValid} // Désactivé si le numéro n'est pas valide
         />
       </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
@@ -82,30 +121,44 @@ const styles = StyleSheet.create({
     marginRight: 20,
     marginTop: 150,
     marginBottom: 40,
-    lineHeight: 40,
+    lineHeight: 50, // Augmenté pour plus d'espacement
     flexWrap: 'wrap',
   },
   inputContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: '#ccc',
     marginBottom: 29,
-    width: '80%', 
-    marginLeft: 30,
   },
-  input: {
-    flex: 10,
-    fontSize: 16,
+  phoneContainer: {
+    width: '95%', // Occupant toute la largeur
+    height: 60, // Hauteur augmentée
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+  },
+  textInput: {
+    paddingVertical: 0,
+    backgroundColor: '#fff',
+  },
+ 
+  codeText: {
+    fontSize: 16, // Taille de police augmentée
+    fontWeight: '600',
+  },
+  phoneTextInput: {
+    fontSize: 16, // Taille de police augmentée
+    fontWeight: '600',
     color: '#000',
   },
   description: {
-    fontSize: 14,
+    fontSize: 16, // Taille de police augmentée
     color: '#555',
     textAlign: 'center',
     marginBottom: 40,
-    width: '80%',
-    marginLeft: 30,
+    width: '90%',
+    marginLeft: '5%', // Centré horizontalement
   },
   link: {
     color: '#007BFF',

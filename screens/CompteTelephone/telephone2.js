@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { resendVerificationCode } from './smsService2'; // Import du service SMS
 import { OtpInput } from 'react-native-otp-entry';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import firebase from 'firebase/compat/app';
+import { LanguageContext } from '../../LanguageContext'; // Import du contexte de langue
 
 const VerificationCode = ({ route, navigation }) => {
   const { verificationId, phoneNumber } = route.params;
@@ -22,6 +23,9 @@ const VerificationCode = ({ route, navigation }) => {
   const [resendDelay, setResendDelay] = useState(30);
   const [resendAttempts, setResendAttempts] = useState(0);
   const MAX_ATTEMPTS = 3;
+
+  const { translations, language } = useContext(LanguageContext); // Utilisation du contexte de langue
+  const t = (key) => translations[language][key]; // Fonction de traduction
 
   useEffect(() => {
     if (resendDelay > 0) {
@@ -32,7 +36,7 @@ const VerificationCode = ({ route, navigation }) => {
 
   const verifyCode = async (code) => {
     if (code.length !== 6) {
-      Alert.alert('Erreur', 'Veuillez entrer un code complet.');
+      Alert.alert(t('error'), t('enterFullCode'));
       return;
     }
 
@@ -50,20 +54,20 @@ const VerificationCode = ({ route, navigation }) => {
       if (!userDoc.exists || !userDoc.data().isRegistered) {
         navigation.replace('telephone3');
       } else {
-        Alert.alert('Succès', 'Vous êtes connecté !');
+        Alert.alert(t('success'), t('loggedIn'));
         navigation.navigate('offres');
       }
     } catch (error) {
-      console.error('Erreur lors de la vérification du code :', error);
-      Alert.alert('Erreur', `Code incorrect ou expiré : ${error.message}`);
+      console.error(t('verificationError'), error);
+      Alert.alert(t('error'), `${t('invalidCode')} : ${error.message}`);
     }
   };
 
   const handleResendCode = async () => {
     if (resendAttempts >= MAX_ATTEMPTS) {
       Alert.alert(
-        'Limite atteinte',
-        'Vous avez atteint la limite de tentatives de renvoi de code.'
+        t('limitReached'),
+        t('resendLimitExceeded')
       );
       return;
     }
@@ -72,13 +76,13 @@ const VerificationCode = ({ route, navigation }) => {
       const newVerificationId = await resendVerificationCode(phoneNumber, recaptchaVerifier);
 
       if (newVerificationId) {
-        console.log('Nouveau verificationId reçu :', newVerificationId);
+        console.log(t('newVerificationIdReceived'), newVerificationId);
         setResendAttempts((prev) => prev + 1);
         setResendDelay(30);
       }
     } catch (error) {
-      console.error('Erreur lors du renvoi du code :', error);
-      Alert.alert('Erreur', 'Impossible de renvoyer le code. Veuillez réessayer.');
+      console.error(t('resendError'), error);
+      Alert.alert(t('error'), t('unableToResend'));
     }
   };
 
@@ -90,12 +94,12 @@ const VerificationCode = ({ route, navigation }) => {
           firebaseConfig={firebase.app().options}
         />
         <Fleche />
-        <Text style={styles.title}>Saisissez votre code</Text>
+        <Text style={styles.title}>{t('enterCode')}</Text>
         <Text style={styles.phoneNumber}>
           {phoneNumber}{' '}
           {resendDelay === 0 ? (
             <TouchableOpacity onPress={handleResendCode}>
-              <Text style={styles.resend}>Renvoyer</Text>
+              <Text style={styles.resend}>{t('resend')}</Text>
             </TouchableOpacity>
           ) : (
             <Text style={styles.timer}>({resendDelay}s)</Text>
@@ -116,7 +120,7 @@ const VerificationCode = ({ route, navigation }) => {
           onPress={() => verifyCode(otpCode)}
           disabled={otpCode.length < 6}
         />
-        <Text style={styles.footer}>Vient de Messages</Text>
+        <Text style={styles.footer}>{t('fromMessages')}</Text>
       </View>
     </TouchableWithoutFeedback>
   );

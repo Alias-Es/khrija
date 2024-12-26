@@ -29,11 +29,11 @@ const OfferButton = ({ onPress, text, buttonType, isDisabled }) => {
 
 const styles = StyleSheet.create({
   subscriptionRequirementButton: {
-    paddingVertical: 10,
+    paddingVertical: 0,
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
+    marginTop: 0,
     width: '100%',
     height: 55,
   },

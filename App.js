@@ -14,6 +14,10 @@ import { LanguageProvider, LanguageContext } from './LanguageContext';
 // Importez vos écrans
 import CreeCompteApple1 from './screens/CompteApple/CreeCompteApple1';
 import CreeCompteApple4 from './screens/CompteApple/CreeCompteApple4';
+import conditionsUtilisation from './screens/conditionsUtilisation';
+import politiqueConfidentialite from './screens/politiqueConfidentialite';
+import FaqScreen from './screens/FaqScreen';
+
 import Dkhla from './screens/dkhla';
 import PromoScreen from './screens/PromoScreen';
 import decouvrire from './screens/decouvrire';
@@ -94,13 +98,17 @@ function App() {
             <Stack.Screen name="ntconnecta" component={ntconnecta} />
             <Stack.Screen name="VerificationCodePage" component={VerificationCodePage} />
             <Stack.Screen name="nt9eyd" component={nt9eyd} />
-            <Stack.Screen name="CreeCompteApple1" component={CreeCompteApple1} />
-             <Stack.Screen name="CreeCompteApple4" component={CreeCompteApple4} />
+            <Stack.Screen name="conditionsUtilisation" component={conditionsUtilisation} />
+            <Stack.Screen name="politiqueConfidentialite" component={politiqueConfidentialite} />
+            <Stack.Screen name="FaqScreen" component={FaqScreen} />
+            
             <Stack.Screen name="telephone1" component={telephone1} />
             <Stack.Screen name="telephone2" component={telephone2} />
             <Stack.Screen name="telephone3" component={telephone3} />
             <Stack.Screen name="telephone4" component={telephone4} />
             <Stack.Screen name="telephone5" component={telephone5} />
+            <Stack.Screen name="CreeCompteApple1" component={CreeCompteApple1} />
+             <Stack.Screen name="CreeCompteApple4" component={CreeCompteApple4} />
           </Stack.Navigator>
         </NavigationContainer>
       </GestureHandlerRootView>

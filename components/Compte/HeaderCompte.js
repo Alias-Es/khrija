@@ -1,6 +1,6 @@
 // HeaderCompte.js
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet ,Platform} from 'react-native';
 
 
 const HeaderCompte = () => {
@@ -17,13 +17,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: Platform.OS === 'android' ? 40 : 0, // Ajout de padding pour Android uniquement
+ 
   },
   logoText: {
     fontFamily: 'ChauPhilomeneOne',
-    fontSize: 35,
-    fontWeight: 'bold',
-    color: '#E91E63',
+    fontSize: 45,
+   
+    color: '#FF4081',
   },
 });
 

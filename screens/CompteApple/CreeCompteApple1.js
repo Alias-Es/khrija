@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { LanguageContext } from '../../LanguageContext'; // Import du contexte de langue
 
 const CreeCompteApple = () => {
   const navigation = useNavigation();
@@ -23,6 +24,9 @@ const CreeCompteApple = () => {
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
   const buttonPositionAnimated = useRef(new Animated.Value(20)).current;
+
+  const { translations, language } = useContext(LanguageContext); // Utilisation du contexte
+  const t = (key) => translations[language][key]; // Fonction de traduction
 
   useEffect(() => {
     const keyboardShowListener = Keyboard.addListener(
@@ -55,7 +59,7 @@ const CreeCompteApple = () => {
 
   const handleContinue = () => {
     if (!nom.trim() || !prenom.trim()) {
-      Alert.alert('Erreur', 'Veuillez entrer votre nom et prénom pour continuer.');
+      Alert.alert(t('error'), t('enterNameAndFirstName'));
       return;
     }
 
@@ -68,12 +72,12 @@ const CreeCompteApple = () => {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Text style={styles.title}>Créer votre compte</Text>
-        <Text style={styles.subtitle}>Entrez vos informations pour continuer.</Text>
+        <Text style={styles.title}>{t('createYourAccount')}</Text>
+        <Text style={styles.subtitle}>{t('enterYourInfo')}</Text>
 
         <TextInput
           style={styles.input}
-          placeholder="Entrez votre nom"
+          placeholder={t('enterLastName')}
           value={nom}
           onChangeText={setNom}
           placeholderTextColor="#aaa"
@@ -81,7 +85,7 @@ const CreeCompteApple = () => {
 
         <TextInput
           style={styles.input}
-          placeholder="Entrez votre prénom"
+          placeholder={t('enterFirstName')}
           value={prenom}
           onChangeText={setPrenom}
           placeholderTextColor="#aaa"
@@ -101,7 +105,7 @@ const CreeCompteApple = () => {
             onPress={handleContinue}
             disabled={!nom.trim() || !prenom.trim()}
           >
-            <Text style={styles.submitButtonText}>Continuer</Text>
+            <Text style={styles.submitButtonText}>{t('continue')}</Text>
           </TouchableOpacity>
         </Animated.View>
       </KeyboardAvoidingView>

@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   appTitle: {
     fontFamily: 'ChauPhilomeneOne',
     fontSize: wp('15%'),
-    fontWeight: 'bold',
+    
     color: '#FF4081',
     textAlign: 'center',
   },

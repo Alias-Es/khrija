@@ -1,25 +1,30 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, Image, StyleSheet, Platform, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import * as firebase from '../FirebaseConfig'; // Importer correctement Firebase
+import * as firebase from '../FirebaseConfig';
 import AppleAuthButton from './connexion/AppleAuthButton';
 import GoogleAuthButton from './connexion/GoogleAuthButton';
 import CustomButton from './connexion/CustomButton';
-import { LanguageContext } from '../LanguageContext'; // Importer le contexte de langue
+import { LanguageContext } from '../LanguageContext';
+import * as WebBrowser from 'expo-web-browser';
+
+// Nécessaire pour gérer les sessions OAuth
+WebBrowser.maybeCompleteAuthSession();
 
 const AppleAuthScreen = () => {
   const navigation = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
 
   const { language, translations } = useContext(LanguageContext);
-  const t = (key) => translations[language][key]; // Fonction pour récupérer les traductions
+  const t = (key) => translations[language][key];
 
-  // Vérifier si l'utilisateur est enregistré
   const checkRegistrationStatus = async (uid) => {
+    console.log('Vérification de l’enregistrement pour UID :', uid);
     try {
       const userDoc = await firebase.firestore().collection('users').doc(uid).get();
 
       if (!userDoc.exists) {
+        console.log('Utilisateur non enregistré, création du champ...');
         await firebase.firestore().collection('users').doc(uid).set({
           isRegistered: false,
         });
@@ -27,6 +32,7 @@ const AppleAuthScreen = () => {
       }
 
       const data = userDoc.data();
+      console.log('Statut d’enregistrement trouvé :', data.isRegistered);
       return data.isRegistered || false;
     } catch (error) {
       console.error('Erreur lors de la vérification de l’enregistrement :', error);
@@ -35,14 +41,16 @@ const AppleAuthScreen = () => {
     }
   };
 
-  // Gérer la redirection après vérification
   const handleNavigation = async (uid) => {
+    console.log('Redirection basée sur l’état d’enregistrement...');
     const isRegistered = await checkRegistrationStatus(uid);
 
     if (isRegistered) {
+      console.log('Utilisateur enregistré, redirection vers "offres".');
       navigation.navigate('offres');
     } else {
-      navigation.replace('CreeCompteApple1', { userId: uid });
+      console.log('Utilisateur non enregistré, redirection vers "CreeCompteApple1".');
+      navigation.navigate('CreeCompteApple1', { userId: uid });
     }
   };
 
@@ -88,11 +96,23 @@ const AppleAuthScreen = () => {
           </View>
           {isLoading && <Text style={styles.loadingText}>{t('loadingText')}</Text>}
           <Text style={styles.footerText}>
-            {t('footerStart')}
-            <Text style={styles.link}>{t('termsOfUse')}</Text>
-            {t('footerMiddle')}
-            <Text style={styles.link}>{t('privacyPolicy')}</Text>.
-          </Text>
+  {t('footerStart')}
+  <Text
+    style={styles.link}
+    onPress={() => navigation.navigate('conditionsUtilisation')}
+  >
+    {t('termsOfUse')}
+  </Text>
+  {t('footerMiddle')}
+  <Text
+    style={styles.link}
+    onPress={() => navigation.navigate('politiqueConfidentialite')}
+  >
+    {t('privacyPolicy')}
+  </Text>
+  .
+</Text>
+
         </View>
       </View>
     </View>
@@ -128,7 +148,6 @@ const styles = StyleSheet.create({
     fontFamily: 'ChauPhilomeneOne',
     fontSize: 90,
     color: '#FF4081',
-    fontWeight: 'bold',
     marginBottom: 20,
   },
   description: {

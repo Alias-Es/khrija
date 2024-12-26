@@ -30,20 +30,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
     color: '#FF4081',
-    marginTop: 20,
+    marginTop: 10,
   },
   offerTitlePermanente: {
     fontSize: 15,
     fontWeight: 'bold',
     color: '#4A90E2',
-    marginTop: 50,
+    marginTop: 0,
   },
   offerContainer: {
     padding: 15,
     borderRadius: 20,
-    marginVertical: 10,
+    marginVertical: 20,
     borderColor: '#D3D3D3',
     borderWidth: 1,
+    
   },
   offerContainerPonctuelle: {
     backgroundColor: '#FFFFFF',

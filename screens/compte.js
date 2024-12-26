@@ -1,22 +1,34 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, ScrollView, SafeAreaView, Alert, Text, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
+import {
+  View,
+  ScrollView,
+  SafeAreaView,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
 import { firebase } from '../FirebaseConfig';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialIcons'; // Import des icônes
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import Ntconnectaa from '../components/Ntconnectaa';
 import HeaderCompte from '../components/Compte/HeaderCompte';
 import SubscriptionOptionCompte from '../components/Compte/SubscriptionOptionCompte';
 import SubscribeButtonCompte from '../components/Compte/SubscribeButtonCompte';
 import FooterCompte from '../components/Compte/FooterCompte';
+import LogoutConfirmationModal from '../components/Compte/LogoutConfirmationModal'; // Import du modal
+import { LanguageContext } from '../LanguageContext';
 
 const Compte = () => {
   const navigation = useNavigation();
+  const { language, translations } = useContext(LanguageContext);
+  const t = (key) => translations[language][key];
+
   const [user, setUser] = useState(undefined);
   const [isRegistered, setIsRegistered] = useState(undefined);
   const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [abonnementActif, setAbonnementActif] = useState(undefined);
   const [prices, setPrices] = useState(undefined);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   const fetchUserData = async () => {
     const currentUser = firebase.auth().currentUser;
@@ -63,14 +75,20 @@ const Compte = () => {
   const handleLogout = async () => {
     try {
       await firebase.auth().signOut();
-      navigation.navigate('offres');
+      setLogoutModalVisible(false); // Assure que le modal disparaît
+      navigation.navigate('offres'); // Redirige après la déconnexion
     } catch (error) {
-      Alert.alert('Erreur', 'La déconnexion a échoué. Veuillez réessayer.');
+      setLogoutModalVisible(false); // Assure que le modal disparaît même en cas d'erreur
+      alert(t('error') + ': ' + t('logoutError'));
     }
   };
 
-  const handleSubscriptionSelect = (subscriptionType) => {
-    setSelectedSubscription(subscriptionType);
+  const showLogoutModal = () => {
+    setLogoutModalVisible(true);
+  };
+
+  const hideLogoutModal = () => {
+    setLogoutModalVisible(false);
   };
 
   if (isRegistered === false) {
@@ -89,31 +107,31 @@ const Compte = () => {
           <>
             <View style={styles.subscriptionContainer}>
               <SubscriptionOptionCompte
-                type="ABONNEMENT ANNUEL"
+                type={t('annualSubscription')}
                 price={prices.annuel}
-                period="an"
-                info1="Valable 12 mois."
-                info2="Pas de renouvellement automatique à la fin de l'abonnement."
+                period={t('perYear')}
+                info1={t('valid12Months')}
+                info2={t('noAutoRenewal')}
                 selected={selectedSubscription === 'ANNUEL'}
-                onSelect={() => handleSubscriptionSelect('ANNUEL')}
+                onSelect={() => setSelectedSubscription('ANNUEL')}
               />
               <SubscriptionOptionCompte
-                type="ABONNEMENT MENSUEL"
+                type={t('monthlySubscription')}
                 price={prices.mensuel}
-                period="mois"
-                info1="Sans engagement."
-                info2="Renouvellement automatique chaque mois."
+                period={t('perMonth')}
+                info1={t('noCommitment')}
+                info2={t('autoRenewal')}
                 selected={selectedSubscription === 'MENSUEL'}
-                onSelect={() => handleSubscriptionSelect('MENSUEL')}
+                onSelect={() => setSelectedSubscription('MENSUEL')}
               />
             </View>
             <SubscribeButtonCompte
               disabled={!selectedSubscription}
               onPress={() => {
                 if (selectedSubscription) {
-                  Alert.alert('Confirmation', `Vous avez sélectionné l'abonnement ${selectedSubscription.toLowerCase()}.`);
+                  alert(t('confirmation') + ': ' + t('selectedSubscription', { subscription: selectedSubscription }));
                 } else {
-                  Alert.alert('Erreur', 'Veuillez sélectionner un abonnement.');
+                  alert(t('error') + ': ' + t('selectSubscriptionError'));
                 }
               }}
             />
@@ -122,28 +140,36 @@ const Compte = () => {
         <View style={[styles.profileContainer, abonnementActif && { marginTop: 30 }]}>
           <ProfileOption
             iconName="local-offer"
-            text="Coupons et Offres"
+            text={t('couponsAndOffers')}
             onPress={() => navigation.navigate('PromoScreen')}
           />
           <ProfileOption
             iconName="subscriptions"
-            text="Mon abonnement"
+            text={t('mySubscription')}
             onPress={() => navigation.navigate('monAbonnement')}
           />
           <ProfileOption
             iconName="help-outline"
-            text="FAQ"
+            text={t('faq')}
             onPress={() => navigation.navigate('FaqScreen')}
           />
           <ProfileOption
             iconName="logout"
-            text="Déconnexion"
-            onPress={handleLogout}
+            text={t('logout')}
+            onPress={showLogoutModal}
             isLogout={true}
           />
         </View>
         <FooterCompte />
       </ScrollView>
+
+      {/* Modal de confirmation de déconnexion */}
+      <LogoutConfirmationModal
+        visible={logoutModalVisible}
+        onClose={hideLogoutModal}
+        onConfirm={handleLogout}
+        t={t}
+      />
     </SafeAreaView>
   );
 };
@@ -166,26 +192,22 @@ const styles = {
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000', // Couleur de l'ombre
-    shadowOffset: { width: 0, height: 1 }, // Décalage de l'ombre
-    shadowOpacity: 0.1, // Opacité de l'ombre
-    shadowRadius: 1, // Rayon de l'ombre (flou)
-    elevation: 2, // Pour Android (équivalent)
-  
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 2,
     paddingVertical: 15,
     paddingHorizontal: 20,
     backgroundColor: '#FFF',
     borderRadius: 20,
     marginVertical: 5,
-    elevation: 2,
   },
   icon: { marginRight: 10 },
   optionText: {
     fontSize: 16,
     fontWeight: '500',
-    textAlign: 'center', // Centrage horizontal du texte
     color: '#000',
-  
   },
   logoutOption: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#FF4081' },
 };

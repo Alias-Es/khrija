@@ -3,15 +3,18 @@ import { Animated, TouchableOpacity, Text, Keyboard, StyleSheet, Platform } from
 
 const SubmitButton = ({ onPress, disabled }) => {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const buttonPositionAnimated = useRef(new Animated.Value(40)).current; // Position initiale (remontée)
+  const buttonPositionAnimated = useRef(new Animated.Value(40)).current;
 
   useEffect(() => {
     const keyboardShowListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (event) => {
         setKeyboardVisible(true);
+        const keyboardHeight = Platform.OS === 'ios' 
+          ? event.endCoordinates.height + 40 
+          : event.endCoordinates.height- 200 ; // Ajustement spécifique pour Android
         Animated.timing(buttonPositionAnimated, {
-          toValue: event.endCoordinates.height - 25, // Position au-dessus du clavier
+          toValue: keyboardHeight,
           duration: 200,
           useNativeDriver: false,
         }).start();
@@ -23,7 +26,7 @@ const SubmitButton = ({ onPress, disabled }) => {
       () => {
         setKeyboardVisible(false);
         Animated.timing(buttonPositionAnimated, {
-          toValue: 60, // Remonte légèrement le bouton lorsqu'il n'y a pas de clavier
+          toValue: 60, // Position par défaut
           duration: 200,
           useNativeDriver: false,
         }).start();
@@ -64,8 +67,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     left: 0,
     right: 0,
-    paddingLeft : 45,
-    
+    paddingLeft: 45,
   },
   submitButton: {
     backgroundColor: '#FF4081',
@@ -73,7 +75,6 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center',
     width: '90%',
-    bottom: 60,
   },
   disabledButton: {
     backgroundColor: '#ccc',

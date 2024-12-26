@@ -1,12 +1,16 @@
-import React, { useState, useRef } from 'react';
+// screens/DetailleOffres.js
+
+import React, { useState, useRef, useContext, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Image,
   Animated,
+  TouchableOpacity,
+  Linking,
+  Image, // Import de Image pour les icônes de cadenas
 } from 'react-native';
 import { firebase } from '../FirebaseConfig';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -20,27 +24,35 @@ import OfferSection from '../components/OfferSection';
 import OfferButton from '../components/OfferButton';
 import CustomSwipeButton from '../components/CustomSwipeButton';
 import SubscriptionButton from '../components/SubscriptionButton';
+import OfferUsedAnimationModal from '../components/OfferUsedAnimationModal';
+import { LanguageContext } from '../LanguageContext';
+import { MaterialIcons, FontAwesome } from '@expo/vector-icons'; // Import de MaterialIcons et FontAwesome
 
 const DetailleOffres = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { id } = route.params;
 
-  const { offer, loading } = useOfferData(id);
+  const { offer, loading: offerLoading } = useOfferData(id);
+  const { language, translations } = useContext(LanguageContext);
+  const t = (key) => translations[language][key];
 
   const user = firebase.auth().currentUser;
 
+  // Suppression des valeurs par défaut pour détecter le chargement
   const {
-    userData = { abonnement_actif: false, isRegistered: false },
-    userOfferState = { etat: false },
-    initialModalVisible = false,
-    setInitialModalVisible = () => {},
-    setUserOfferState = () => {},
+    userData,
+    userOfferState,
+    initialModalVisible,
+    setInitialModalVisible,
+    setUserOfferState,
+    loading: userDataLoading, // Supposons que useUserData fournit un indicateur de chargement
   } = user ? useUserData(id) : {};
 
   const [offerDialogVisible, setOfferDialogVisible] = useState(false);
   const [userCardVisible, setUserCardVisible] = useState(false);
   const [showSwipeButton, setShowSwipeButton] = useState(false);
+  const [animationVisible, setAnimationVisible] = useState(false); // Nouvel état pour l'animation
 
   // Animation pour le bouton "M'abonner"
   const shakeAnimation = useRef(new Animated.Value(0)).current;
@@ -92,13 +104,28 @@ const DetailleOffres = () => {
 
         setUserOfferState((prevState) => ({ ...prevState, etat: false }));
         setShowSwipeButton(false);
+        
+        // Assurez-vous que l'animation est d'abord fermée
+        setAnimationVisible(false);
+        // Petit délai avant de rouvrir
+        setTimeout(() => {
+          setAnimationVisible(true);
+        }, 100);
       }
     } catch (error) {
-      console.error("Erreur lors de la mise à jour de l'état de l'offre:", error);
+      console.error(t('updateOfferError'), error);
     }
   };
 
-  if (loading) {
+  // Utilisation de useEffect pour gérer la visibilité du modal
+  useEffect(() => {
+    if (userOfferState?.etat === true) {
+      setInitialModalVisible(false);
+    }
+  }, [userOfferState?.etat, setInitialModalVisible]);
+
+  // Gestion de l'état de chargement
+  if (offerLoading || (user && userDataLoading)) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#E91E63" />
@@ -109,14 +136,47 @@ const DetailleOffres = () => {
   if (!offer) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Erreur lors du chargement de l'offre.</Text>
+        <Text style={styles.errorText}>{t('loadingOfferError')}</Text>
       </View>
     );
   }
 
+  // Vérifiez si userOfferState est disponible
+  if (user && !userOfferState) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#E91E63" />
+      </View>
+    );
+  }
+
+  // Variables pour les contenus conditionnels basés sur la langue
+  const categoryText = language === 'en' ? offer.categorieEN : offer.categorie;
+  const descriptionText = language === 'en' ? offer.descriptionEN : offer.description;
+  const discoveryOfferText = language === 'en' ? offer.offresDecouverteEN : offer.offreDecouverte;
+  const permanentOfferText = language === 'en' ? offer.offrePermananteEN : offer.offrePermanente;
+
+  // Condition pour déterminer si l'offre découverte doit être affichée
+  const shouldShowDiscoveryOffer = !(userData?.abonnement_actif && !userOfferState?.etat);
+
+  // Fonction pour ouvrir les liens externes
+  const openLink = async (url) => {
+    if (url) {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        console.error(`Impossible d'ouvrir l'URL: ${url}`);
+        // Optionnel : Afficher une alerte à l'utilisateur
+        // Alert.alert('Erreur', 'Impossible d\'ouvrir le lien fourni.');
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {userOfferState?.etat === false && (
+      {/* Ne pas afficher InitialSubscriptionModal si etat est true */}
+      {user && userOfferState?.etat === false && initialModalVisible && (
         <InitialSubscriptionModal
           visible={initialModalVisible}
           onClose={() => setInitialModalVisible(false)}
@@ -149,79 +209,116 @@ const DetailleOffres = () => {
         />
 
         <View style={styles.content}>
-          <Text style={styles.categoryText}>{offer.categorie}</Text>
-          <Text style={styles.title}>{offer.nom}</Text>
+          <Text style={styles.categoryText}>{categoryText}</Text>
+          
+          {/* Conteneur pour le nom et les icônes sociales */}
+          <View style={styles.nameAndSocialContainer}>
+            <Text style={styles.title}>{offer.nom}</Text>
+            <View style={styles.socialIconsContainer}>
+              {offer.facebook && (
+                <TouchableOpacity
+                  onPress={() => openLink(offer.facebook)}
+                  style={styles.socialIconButton}
+                >
+                  <FontAwesome name="facebook-square" size={24} color="#E91E63" />
+                </TouchableOpacity>
+              )}
+              {offer.instagram && (
+                <TouchableOpacity
+                  onPress={() => openLink(offer.instagram)}
+                  style={styles.socialIconButton}
+                >
+                  <FontAwesome name="instagram" size={24} color="#E91E63" />
+                </TouchableOpacity>
+              )}
+              {offer.site && (
+                <TouchableOpacity
+                  onPress={() => openLink(offer.site)}
+                  style={styles.socialIconButton}
+                >
+                  <MaterialIcons name="public" size={24} color="#E91E63" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Ajout du champ adresse avec icône de localisation */}
+          {offer.adresse && (
+            <View style={styles.addressContainer}>
+              <MaterialIcons
+                name="location-on"
+                size={20}
+                color="#000000" // Couleur noire
+                style={styles.locationIcon}
+              />
+              <Text style={styles.addressText}>{offer.adresse}</Text>
+            </View>
+          )}
+
+          {/* Ajout des icônes Facebook, Instagram et Site Web dans une autre ligne si nécessaire */}
+          {/* Vous avez demandé de les mettre à droite de la ligne du nom, donc ils sont déjà inclus ci-dessus */}
 
           <View style={styles.descriptionContainer}>
             <Text style={styles.description} numberOfLines={3}>
-              {offer.description}
+              {descriptionText}
             </Text>
           </View>
 
-          <OfferSection
-            title="🎟️ Offre Découverte"
-            offerText={offer.offreDecouverte}
-            isActive={userData?.abonnement_actif}
-            styleType="Ponctuelle"
-          />
+          {shouldShowDiscoveryOffer && (
+            <OfferSection
+              title={t('discoveryOffer')}
+              offerText={discoveryOfferText}
+              isActive={userData?.abonnement_actif}
+              styleType="Ponctuelle" // Valeur fixe
+            />
+          )}
 
           <View style={styles.buttonContainer}>
             {!userData?.isRegistered ? (
               <OfferButton
                 text={
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={styles.buttonContent}>
                     <Image
-                      source={require('../assets/images/cadenas1.png')}
-                      style={{ width: 23, height: 23, marginRight: 9, marginBottom: 4 }}
+                      source={require('../assets/images/cadenas.png')} // Remplacer par votre icône de cadenas
+                      style={styles.icon}
                     />
-                    <Text style={styles.cardText}>Offre réservée aux abonnés</Text>
+                    <Text style={styles.cardText}>{t('offerForSubscribers')}</Text>
                   </View>
                 }
                 buttonType={1}
                 isDisabled={true}
-                onPress={() => {
-                  // Bouton gris
-                  if (!userData?.abonnement_actif) {
-                    shakeSubscriptionButton();
-                  }
-                }}
+                onPress={shakeSubscriptionButton}
               />
             ) : !userData?.abonnement_actif && !userOfferState?.etat ? (
               <OfferButton
                 text={
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={styles.buttonContent}>
                     <Image
-                      source={require('../assets/images/cadenas.png')}
-                      style={{ width: 23, height: 23, marginRight: 9, marginBottom: 4 }}
+                      source={require('../assets/images/cadenas.png')} // Remplacer par votre icône de cadenas
+                      style={styles.icon}
                     />
-                    <Text style={styles.cardText}>Offre réservée aux abonnés</Text>
+                    <Text style={styles.cardText}>{t('offerForSubscribers')}</Text>
                   </View>
                 }
                 buttonType={1}
                 isDisabled={true}
-                onPress={() => {
-                  // Bouton gris
-                  if (!userData?.abonnement_actif) {
-                    shakeSubscriptionButton();
-                  }
-                }}
+                onPress={shakeSubscriptionButton}
               />
+            ) : userData?.abonnement_actif && !userOfferState?.etat ? (
+              // Cas spécifique où l'abonnement est actif et l'état de l'offre est false
+              // Ne rien afficher (aucun bouton)
+              null
             ) : !userOfferState?.etat ? (
               <OfferButton
-                text="Offre déjà utilisée"
+                text={t('offerAlreadyUsed')}
                 buttonType={1}
                 isDisabled
-                onPress={() => {
-                  // Bouton gris
-                  if (!userData?.abonnement_actif) {
-                    shakeSubscriptionButton();
-                  }
-                }}
+                onPress={shakeSubscriptionButton}
               />
             ) : !showSwipeButton ? (
               <OfferButton
                 onPress={() => setOfferDialogVisible(true)}
-                text="Afficher mon offre"
+                text={t('showMyOffer')}
                 buttonType={1}
                 isDisabled={false}
               />
@@ -231,10 +328,10 @@ const DetailleOffres = () => {
           </View>
 
           <OfferSection
-            title="♾️ Offre Permanente"
-            offerText={offer.offrePermanente}
+            title={t('permanentOffer')}
+            offerText={permanentOfferText}
             isActive={userData?.abonnement_actif}
-            styleType="Permanente"
+            styleType="Permanente" // Valeur fixe
           />
 
           <OfferButton
@@ -242,21 +339,18 @@ const DetailleOffres = () => {
               if (userData?.abonnement_actif) {
                 setUserCardVisible(true);
               } else {
-                // Bouton gris
                 shakeSubscriptionButton();
               }
             }}
             text={
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={styles.buttonContent}>
                 {!userData?.abonnement_actif && (
                   <Image
-                    source={require('../assets/images/cadenas.png')}
-                    style={{ width: 23, height: 23, marginRight: 9, marginBottom: 4,position: 'absolute',
-                      left: -75,
-                    }}
+                    source={require('../assets/images/cadenas.png')} // Remplacer par votre icône de cadenas
+                    style={styles.icon}
                   />
                 )}
-                <Text style={styles.cardText}>Ma Carte</Text>
+                <Text style={styles.cardText}>{t('myCard')}</Text>
               </View>
             }
             buttonType={2}
@@ -264,6 +358,14 @@ const DetailleOffres = () => {
           />
         </View>
       </ScrollView>
+
+      {/* Modal d'animation de confirmation */}
+      <OfferUsedAnimationModal
+        visible={animationVisible}
+        onClose={() => setAnimationVisible(false)}
+        offerName={offer.offreDecouverte} // Utilisez 'offreDecouverte' comme demandé
+        establishmentName={offer.nom} // Assurez-vous que 'etablissement' existe dans vos données Firebase
+      />
 
       {!userData?.abonnement_actif && (
         <Animated.View
@@ -288,7 +390,7 @@ const DetailleOffres = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#ffffff',
     overflow: 'hidden',
   },
   scrollContainer: {
@@ -330,11 +432,40 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textTransform: 'uppercase',
   },
+  // Conteneur pour le nom et les icônes sociales
+  nameAndSocialContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   title: {
     fontSize: 29,
     fontWeight: 'bold',
     color: '#333',
-    marginVertical: 10,
+    flex: 1, // Permet au nom de prendre tout l'espace disponible à gauche
+    marginRight: 10, // Espacement entre le nom et les icônes
+  },
+  // Styles ajoutés pour l'adresse
+  addressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  locationIcon: {
+    marginRight: 8,
+  },
+  addressText: {
+    fontSize: 16,
+    color: '#555',
+  },
+  // Styles pour les icônes sociales
+  socialIconsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  socialIconButton: {
+    marginLeft: 10,
   },
   description: {
     fontSize: 15,
@@ -356,6 +487,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  icon: {
+    width: 23, // Ajustez la taille en fonction de votre image de cadenas
+    height: 23, // Ajustez la taille en fonction de votre image de cadenas
+    marginRight: 9,
+    marginBottom: 4,
+    resizeMode: 'contain', // Assure que l'image est bien ajustée
   },
 });
 

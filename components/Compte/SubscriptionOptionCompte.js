@@ -2,6 +2,12 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 
 const SubscriptionOptionCompte = ({ type, price, period, info1, info2, info3, selected, onSelect }) => {
+  // Normaliser le type pour faciliter la comparaison
+  const normalizedType = type.toUpperCase();
+
+  // Définir les types d'abonnement annuel en français et en anglais
+  const isAnnualSubscription = normalizedType === 'ABONNEMENT ANNUEL' || normalizedType === 'ANNUAL SUBSCRIPTION';
+
   return (
     <TouchableOpacity
       style={[
@@ -11,13 +17,13 @@ const SubscriptionOptionCompte = ({ type, price, period, info1, info2, info3, se
       onPress={onSelect}
     >
       <Text style={styles.subscriptionTitle}>{type}</Text>
-      <Text style={type === 'ABONNEMENT ANNUEL' ? styles.subscriptionPriceAnnee : styles.subscriptionPriceMois}>
+      <Text style={isAnnualSubscription ? styles.subscriptionPriceAnnee : styles.subscriptionPriceMois}>
         {price} MAD
       </Text>
-      <Text style={styles.subscriptionPeriod}>/par {period}</Text>
+      <Text style={styles.subscriptionPeriod}>/ {period}</Text>
       <Text style={styles.subscriptionInfo}>{info1}</Text>
       <Text style={styles.subscriptionInfo}>{info2}</Text>
-     
+      {/* Vous pouvez ajouter info3 si nécessaire */}
     </TouchableOpacity>
   );
 };
