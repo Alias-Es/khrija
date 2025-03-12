@@ -2,7 +2,7 @@
   "expo": {
     
     "name": "MonProjetExpo",
-    
+    "owner": "alies", 
     "slug": "MonProjetExpo",
     "newArchEnabled": true,
     "version": "1.0.0",
