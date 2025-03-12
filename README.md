@@ -3,7 +3,8 @@
 KhrIJa est une application mobile innovante développée avec **React Native** et **Expo**, offrant aux utilisateurs des abonnements pour accéder à des offres exclusives dans divers domaines tels que la restauration, le sport, la culture, le bien-être et le shopping.
 
 ## 🖼️ Aperçu de l'application
-![Aperçu de KhrIJa](assets/IMG_0.PNG)
+<img src="assets/IMG_0.PNG" alt="Aperçu de KhrIJa" width="500" height="auto"/>
+
 
 
 ## 📌 Fonctionnalités principales
