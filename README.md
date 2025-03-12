@@ -4,6 +4,8 @@ KhrIJa est une application mobile innovante développée avec **React Native** e
 
 ## 🖼️ Aperçu de l'application
 <img src="assets/IMG_0.PNG" alt="Aperçu de KhrIJa" width="150" height="auto"/>  <img src="assets/IMG_01.PNG" alt="Aperçu de KhrIJa" width="150" height="auto"/>
+<img src="assets/IMG_02.PNG" alt="Aperçu de KhrIJa" width="150" height="auto"/> <img src="assets/IMG_03.PNG" alt="Aperçu de KhrIJa" width="150" height="auto"/>
+<img src="assets/IMG_04.PNG" alt="Aperçu de KhrIJa" width="150" height="auto"/>
 
 ## 📌 Fonctionnalités principales
 - **Offres Découvertes** : Utilisables une seule fois.
