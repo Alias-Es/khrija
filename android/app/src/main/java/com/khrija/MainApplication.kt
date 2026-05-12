@@ -1,4 +1,4 @@
-package com.alies.MonProjetExpo
+package com.khrija
 
 import android.app.Application
 import android.content.res.Configuration
